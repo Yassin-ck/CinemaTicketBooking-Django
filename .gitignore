@@ -1,2 +1,4 @@
 cinenv
 .env
+bookyourshow/.env
+./bookyourshow/.env
