@@ -51,7 +51,13 @@ class MyUser(AbstractBaseUser):
     USERNAME_FIELD = "email"
 
     def __str__(self):
-        return str(self.password)
+        if self.username is not None:
+            return self.username
+        elif self.email is not None:
+            return self.email
+        else:
+            return str(self.phone)
+            
 
     def has_perm(self, perm, obj=None):
         return True
