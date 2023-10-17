@@ -13,6 +13,7 @@ def send_sms(phone_number):
                         .services(settings.SERVICE_SID) \
                         .verifications \
                         .create(to=phone_number, channel='sms')
+        print(verification.sid)
         return verification.sid
     except ConnectionError as e:
         raise e
