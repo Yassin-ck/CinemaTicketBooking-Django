@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from .models import MyUser,UserProfile
+from .models import (
+    MyUser,
+    UserProfile,
+    Location,
+    RequestLocation,  
+    )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .modules import google
@@ -80,16 +85,25 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
         
         
     def update(self,instance,validated_data):
-        print(validated_data)
         instance.first_name = validated_data.get('first_name',instance.first_name)
         instance.last_name = validated_data.get('last_name',instance.last_name)
         instance.address = validated_data.get('address',instance.address)
-        if instance.user:
-            
-            validated_user_data = validated_data.get('user',instance.user)
+        
+        validated_user_data = validated_data.pop('user',None)       
+        if validated_user_data:          
             instance.user.username = validated_user_data.get('username',instance.user.username)
             instance.user.email = validated_user_data.get('email',instance.user.email)
             instance.user.phone = validated_user_data.get('phone',instance.user.phone)
         return instance
         
-    
+        
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ('country','state','district','place')
+        
+     
+class RequestedLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestLocation
+        exclude = ('current_location',)

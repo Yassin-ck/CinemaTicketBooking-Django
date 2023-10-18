@@ -27,9 +27,7 @@ class MyUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-AUTH_PROVIDERS = {
-    'google','email','phone'
-}
+
 class MyUser(AbstractBaseUser):
     username = models.CharField(max_length=255,null=True,blank=True)
     phone = models.CharField(
@@ -71,6 +69,40 @@ class MyUser(AbstractBaseUser):
 
 
 
+class Location(models.Model):
+    coordinates = models.PointField(srid=4326)
+    country = models.CharField(max_length=100,null=True,blank=True)
+    state = models.CharField(max_length=100,null=True,blank=True)
+    district = models.CharField(max_length=100,null=True,blank=True)
+    place = models.CharField(max_length=100,null=True,blank=True)
+    
+
+    @property
+    def longitude(self):
+        return self.coordinates.x
+    
+    @property
+    def latitude(self):
+        return self.coordinates.y
+    
+    
+class RequestLocation(models.Model):
+    STATUS = [
+        ('PENDING','PENDING'),
+        ('ACCEPTED','ACCEPTED'),
+        ('REJECTED','REJECTED')
+    ]
+    
+    current_location = models.PointField(srid=4326,null=True,blank=True)
+    user = models.ForeignKey(MyUser,on_delete=models.CASCADE)
+    country = models.CharField(max_length=100,null=True,blank=True)
+    state = models.CharField(max_length=100,null=True,blank=True)
+    district = models.CharField(max_length=100,null=True,blank=True)
+    place = models.CharField(max_length=100,null=True,blank=True)
+    status = models.CharField(default='PENDING',choices=STATUS,max_length=10)
+    
+    
+    
 
 class UserProfile(models.Model):
     user = models.OneToOneField(MyUser,on_delete=models.CASCADE,primary_key=True,related_name='userprofile')

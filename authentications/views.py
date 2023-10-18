@@ -1,18 +1,29 @@
 
-from .models import MyUser,UserProfile
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from django.db.models import Q
+from ipware import get_client_ip
+from django.contrib.gis.geos import Point
+import urllib,json
 from authentications.modules.utils import send_sms,verify_user_code   #twilio
+from .models import (
+    MyUser,
+    UserProfile,
+    Location,
+    RequestLocation,
+    )
 from .serializers import (
     PhoneSerilaizer,
     OtpSerializer,
     MyTokenSerializer,
     UserProfileViewSerializer,
     GoogleSocialAuthSerializer,
+    LocationSerializer,
+    RequestedLocationSerializer,
     )
  
 
@@ -75,7 +86,7 @@ class OtpVerification(APIView):
 
 
 
-
+ 
 
 class GoogleSocialAuthView(APIView):
     
@@ -88,19 +99,57 @@ class GoogleSocialAuthView(APIView):
 
 
 
+class SearchLocaition(APIView):
+    
+    def get(self,request):
+        q = request.GET.get('q')
+        Q_base = Q(country__icontains=q) | Q(state__icontains=q) | Q(district__icontains=q) | Q(place__icontains=q)
+        location_data = Location.objects.filter(Q_base)
+        if location_data:
+            serializer = LocationSerializer(location_data,many=True)
+            serializer.is_valid(raise_exception=True)
+            return Response(serializer.data)
+        return Response({"msg":"Location not found..."})
 
+    
+    def post(self,request):
+        serializer = RequestedLocationSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"msg":"Your location will be updated soon..."})
+        return Response(serializer.errors)
 
+        
+        
 
-
-
-
-
-
-
-
-
-
-
+class CurrentLocation(APIView):
+    def get(self,request):
+        client_ip,is_routable = get_client_ip(request)
+        if client_ip is None:
+            client_ip = "0.0.0.0"
+        else:
+            if is_routable:
+                ip_type = "public"
+            else:
+                ip_type = "private"
+        print(ip_type,client_ip)
+        ip_address = "217.248.221.55"    # for checking
+        url = f"https://api.ipfind.com/?ip={ip_address}"
+        response = urllib.request.urlopen(url)
+        print(response)
+        data = json.loads(response.read())
+        data['client_ip'] = client_ip
+        data['ip_type'] = ip_type
+        point = Point(data['longitude'],data['latitude'])
+        if not Location.objects.filter(coordinates=point).exists():
+           Location.objects.create(
+               country = data['country'],
+               state = data['region'],
+               district = data['county'],
+               place = data['city'],
+               coordinates = point             
+           ) 
+        return Response(data)
+ 
 
 
 
