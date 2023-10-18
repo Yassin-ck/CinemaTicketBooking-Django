@@ -107,9 +107,8 @@ class SearchLocaition(APIView):
         location_data = Location.objects.filter(Q_base)
         if location_data:
             serializer = LocationSerializer(location_data,many=True)
-            serializer.is_valid(raise_exception=True)
-            return Response(serializer.data)
-        return Response({"msg":"Location not found..."})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"msg":"Location not found..."}, status=status.HTTP_404_NOT_FOUND)
 
     
     def post(self,request):

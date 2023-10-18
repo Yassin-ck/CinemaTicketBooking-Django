@@ -7,15 +7,17 @@ from twilio.base.exceptions import TwilioRestException
 
 client = Client(settings.ACCOUNT_SID,settings.AUTH_TOKEN)
 def send_sms(phone_number):
+    print(phone_number)
     try: 
         verification = client.verify \
                         .v2 \
                         .services(settings.SERVICE_SID) \
                         .verifications \
                         .create(to=phone_number, channel='sms')
-        print(verification.sid)
+        print(verification.sid,'lllll')
         return verification.sid
     except ConnectionError as e:
+        print(e,'ll')
         raise e
        
 
