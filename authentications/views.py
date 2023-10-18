@@ -25,7 +25,6 @@ from .serializers import (
     LocationSerializer,
     RequestedLocationSerializer,
     )
- 
 
 #Registering or Login Using Phone
 class PhoneLogin(APIView):
