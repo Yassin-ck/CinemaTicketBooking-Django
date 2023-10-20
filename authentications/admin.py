@@ -12,10 +12,10 @@ from django.contrib.gis.admin import OSMGeoAdmin
 
 @admin.register(MyUser)
 class MyUserAdmin(OSMGeoAdmin):
-    list_display = ('id','username','phone','email')
+    list_display = ('id','username','email')
 @admin.register(UserProfile)
 class UserProfiileAdmin(OSMGeoAdmin):
-    list_display = ('user_id','first_name','last_name','address','location')
+    list_display = ('user_id','first_name','last_name','phone','address','location')
     
 @admin.register(Location)
 class LocationAdmin(OSMGeoAdmin):

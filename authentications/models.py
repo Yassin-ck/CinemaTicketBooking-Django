@@ -5,10 +5,9 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models 
 
 class MyUserManager(BaseUserManager):
-    def create_user(self,phone=None,email=None,username=None,password=None ,**kwargs):
+    def create_user(self,email=None,username=None,password=None ,**kwargs):
 
         user = self.model(
-            phone=phone,
             email=self.normalize_email(email),
             username=username,
             
@@ -17,9 +16,9 @@ class MyUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone=None,username=None,password=None,**kwargs):
+    def create_superuser(self, email=None,username=None,password=None,**kwargs):
         user = self.create_user(
-            phone=phone,
+            email=email,
             username=username            
         )
         user.set_password(password)
@@ -30,18 +29,11 @@ class MyUserManager(BaseUserManager):
 
 class MyUser(AbstractBaseUser):
     username = models.CharField(max_length=255,null=True,blank=True)
-    phone = models.CharField(
-        max_length=20,
-        null=True
-    )
     email = models.EmailField(max_length=255,unique=True,null=True,blank=True)
     date_joined = models.DateField(auto_now=True)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
-    auth_provider = models.CharField(
-        max_length=255,null=True,
-        blank=True
-    )
+
     
 
     objects = MyUserManager()
@@ -95,17 +87,27 @@ class RequestLocation(models.Model):
     
     current_location = models.PointField(srid=4326,null=True,blank=True)
     user = models.ForeignKey(MyUser,on_delete=models.CASCADE)
-    country = models.CharField(max_length=100,null=True,blank=True)
-    state = models.CharField(max_length=100,null=True,blank=True)
-    district = models.CharField(max_length=100,null=True,blank=True)
-    place = models.CharField(max_length=100,null=True,blank=True)
+    country = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    district = models.CharField(max_length=100)
+    place = models.CharField(max_length=100)
     status = models.CharField(default='PENDING',choices=STATUS,max_length=10)
     
     
     
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(MyUser,on_delete=models.CASCADE,primary_key=True,related_name='userprofile')
+    user = models.OneToOneField(
+        MyUser,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='userprofile'
+        )
+    phone = models.CharField(
+        max_length=20,
+        unique=True,
+        null=True
+    )
     first_name = models.CharField(max_length=30,null=True)
     last_name = models.CharField(max_length=30,null=True)
     address = models.TextField(null=True)

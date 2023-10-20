@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from osgeo import gdal
 from pathlib import Path
+from datetime import timedelta
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -181,7 +182,6 @@ INTERNAL_IPS = [
 
 #simple_jwt
   
-from datetime import timedelta
 
 
 SIMPLE_JWT = {
@@ -223,3 +223,25 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+
+
+
+
+# smtp configuration
+
+
+
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.getenv('EMAIL')
+EMAIL_HOST_PASSWORD = os.getenv('EMAILHOSTPASSWORD')
+EMAIL_USE_TLS = True
+
+
+
+
+#ip auth
+
+IP_AUTH =os.getenv('IP_AUTH')

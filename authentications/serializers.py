@@ -25,7 +25,7 @@ class MyTokenSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        if user.phone:
+        if user.userprofile.phone:
             token['phone'] = user.phone
         if user.username:
             token['username'] = user.username
@@ -56,24 +56,20 @@ class GoogleSocialAuthSerializer(serializers.Serializer):
         user_id = user_data['sub']
         email = user_data['email']
         name = user_data['name']
-        provider = 'google'
         
         return register_social_user(
-            provider=provider,user_id=user_id,email=email,name=name,
+            user_id=user_id,email=email,name=name,
         )
   
   
   
   
-  
-  
-  
-    
+   
         
 class MyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('id','username','email','phone')
+        fields = ('id','username','email')
 
 
 class UserProfileViewSerializer(GeoFeatureModelSerializer):
@@ -81,7 +77,7 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = UserProfile
         geo_field = 'location'
-        fields = ('user_id','first_name','last_name','address','user')
+        fields = ('user_id','first_name','last_name','address','phone','user')
         
         
     def update(self,instance,validated_data):
@@ -93,9 +89,14 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
         if validated_user_data:          
             instance.user.username = validated_user_data.get('username',instance.user.username)
             instance.user.email = validated_user_data.get('email',instance.user.email)
-            instance.user.phone = validated_user_data.get('phone',instance.user.phone)
         return instance
         
+  
+  
+class EmailAuthViewSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+  
+  
         
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -106,4 +107,6 @@ class LocationSerializer(serializers.ModelSerializer):
 class RequestedLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestLocation
-        exclude = ('current_location',)
+        exclude = ('current_location','user')
+        
+    

@@ -4,43 +4,30 @@ from django.conf import settings
 from authentications import views
 from rest_framework.exceptions import AuthenticationFailed
 
-def register_social_user(provider,user_id,email,name):
-    
-    filterd_user_by_email = MyUser.objects.filter(email=email)
-    
-    if filterd_user_by_email.exists():
-        if provider==filterd_user_by_email[0].auth_provider:          
-            registered_user = authenticate(
-                email=email,password=settings.CLIENT_SECRET
-            )
+def register_social_user(user_id,email,name):
 
+        try:
+            registered_user = MyUser.objects.get(email=email)
             return {
                 'username' : registered_user.username,
                 'email' : registered_user.email,
                 'tokens': views.get_tokens_for_user(registered_user)
             }
-        else:
-            raise AuthenticationFailed(
-                detail='Please continue your login using ' + filterd_user_by_email[0].auth_provider
-            )
-            
-    else:
-        user = {
-            'username' : name,
-            'email' : email,
-            'password':settings.CLIENT_SECRET
-        }
-        user = MyUser.objects.create_user(**user)
-        user.auth_provider = provider
-        user.save()
-        
-        new_user = authenticate(
-            email=email,password=settings.CLIENT_SECRET
-        )
+        except:
+            user = {
+                'username' : name,
+                'email' : email,
+            }
+            try:
+                user = MyUser.objects.create_user(**user)
+                user.save()
 
-        return {
-            'username' : new_user.username,
-            'email' : new_user.email,
-            'tokens': views.get_tokens_for_user(new_user)
-        }
+                return {
+                    'username' : user.username,
+                    'email' : user.email,
+                    'tokens': views.get_tokens_for_user(user)
+                }
+            except:
+                return "Something Went Wrong..."
+            
         

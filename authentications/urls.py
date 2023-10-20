@@ -1,19 +1,23 @@
 
 from django.urls import path
 from .views import (
-    PhoneLogin,
+    MobilePhoneUpdate,
     OtpVerification,
     UserProfileView,
     GoogleSocialAuthView,
     CurrentLocation,
-    SearchLocaition
+    SearchLocaition,
+    EmailAuthView,
+    EmailVerification,
     )
 
 urlpatterns = [
     path('google/',GoogleSocialAuthView.as_view(),name='google'),
-    path("login/", PhoneLogin.as_view(), name="rest_login"),
-    path("otp/", OtpVerification.as_view(), name="otp"),
+    path('email/',EmailAuthView.as_view(),name='google'),
+    path('email/otp/',EmailVerification.as_view(),name='google'),
     path('userprofile/',UserProfileView.as_view(),name='userprofile'),
+    path('userprofile/phone/',MobilePhoneUpdate.as_view(),name='phone'),
+    path("userprofile/phone/otp/", OtpVerification.as_view(), name="otp"),
     path('currentlocation/',CurrentLocation.as_view(),name='currentlocation'),
     path('searchlocation/',SearchLocaition.as_view(),name='searchlocation')
 ]
