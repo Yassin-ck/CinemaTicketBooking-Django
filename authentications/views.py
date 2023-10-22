@@ -186,7 +186,7 @@ class UserProfileView(APIView):
 
 
 #Updating Mobile Number 
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 class MobilePhoneUpdate(APIView):
     def post(self,request):
         serializer =  PhoneSerilaizer(data=request.data)
