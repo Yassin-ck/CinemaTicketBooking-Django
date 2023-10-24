@@ -22,30 +22,24 @@ class TheareOwnerDetails(models.Model):
 
 
 
-# class TheatreDetails(models.Model):
+class TheatreDetails(models.Model):
 
-#     theatre_name = models.CharField(max_length=255)
-#     movies = models.ForeignKey('MovieDetails',on_delete=models.PROTECT)
-#     location = models.ForeignKey(Location,on_delete=models.CASCADE)
-#     num_of_screens = models.IntegerField()  
-#     certification = models.FileField()
+    theatre_name = models.CharField(max_length=255)
+    # movies = models.ForeignKey('MovieDetails',on_delete=models.PROTECT)
+    location = models.ForeignKey(Location,on_delete=models.SET_NULL,null=True)
+    num_of_screens = models.IntegerField()  
+    certification = models.CharField(max_length=100)
     
-    
-#     def save(self,*args,**kwargs):
-#         super(TheatreDetails,self).save(*args,**kwargs)
-#         for i in range(self.num_of_screens):
-#             screen = ScreenDetails(theatre=self)
-#             screen.save()
 
 
-# class ScreenDetails(models.Model):
+class ScreenDetails(models.Model):
 
-#     theatre = models.ForeignKey(TheatreDetails,on_delete=models.CASCADE)
-#     screen_number = models.IntegerField()
-#     number_of_seats = models.IntegerField()
-#     row_count = models.IntegerField()
-#     column_count = models.IntegerField()
-#     seat_arrangement = models.JSONField()
+    theatre = models.ForeignKey(TheatreDetails,on_delete=models.CASCADE)
+    screen_number = models.IntegerField(null=True,blank=True)
+    number_of_seats = models.IntegerField(null=True,blank=True)
+    row_count = models.IntegerField(null=True,blank=True)
+    column_count = models.IntegerField(null=True,blank=True)
+    seat_arrangement = models.JSONField(null=True,blank=True)
     
     
         
