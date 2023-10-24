@@ -30,7 +30,9 @@ class MyTokenSerializer(TokenObtainPairSerializer):
         if user.username:
             token['username'] = user.username
         if user.email:
-            token['email'] = user.email           
+            token['email'] = user.email  
+        if user.theatreowner.first() is not None:
+            token['is_theatre'] = True         
         
         return token
     

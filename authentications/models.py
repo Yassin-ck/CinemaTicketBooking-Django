@@ -60,7 +60,6 @@ class MyUser(AbstractBaseUser):
         return self.is_admin
 
 
-
 class Location(models.Model):
     coordinates = models.PointField(srid=4326)
     country = models.CharField(max_length=100,null=True,blank=True)

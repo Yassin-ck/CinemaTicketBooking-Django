@@ -2,7 +2,7 @@ from rest_framework import serializers
 from authentications.serializers import MyUserSerializer
 from authentications.models import MyUser,UserProfile,RequestLocation
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-        
+from theatre_dashboard.models import TheareOwnerDetails
 class UserProfileViewSerializer(GeoFeatureModelSerializer):
     user = MyUserSerializer()
     class Meta:
@@ -26,3 +26,14 @@ class  RequestedLocationSerializer(serializers.ModelSerializer):
         return instance
         
     
+    
+class TheatreOwnerDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TheareOwnerDetails
+        fields = ('id','first_name','last_name','email','phone','id_proof','is_verified')
+
+
+    def update(self,instance,validated_data):
+        instance.is_verified = validated_data.get('is_verified',instance.is_verified)
+        instance.save()
+        return instance

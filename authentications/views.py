@@ -14,13 +14,14 @@ from authentications.modules.smtp import send_email
 import urllib,json
 from django.conf import settings
 import random,math
-from authentications.modules.utils import send_sms,verify_user_code   #twilio
+#twilio
+from authentications.modules.utils import send_sms,verify_user_code 
 from .models import (
     MyUser,
     UserProfile,
     Location,
     RequestLocation,
-    )
+    )   
 from .serializers import (
     PhoneSerilaizer,
     OtpSerializer,
@@ -224,7 +225,5 @@ class OtpVerification(APIView):
                     return Response(response_data)
             return Response({'msg': 'Something Went Wrong...'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors)
-
-
 
 

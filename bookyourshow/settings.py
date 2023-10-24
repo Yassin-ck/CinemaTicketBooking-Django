@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django.contrib.gis',
     'corsheaders',
+    'theatre_dashboard'
     
 ]
 

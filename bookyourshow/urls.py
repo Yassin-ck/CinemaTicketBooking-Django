@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('authentications.urls')),
     path('admin_panel/',include('admin_dashboard.urls')),
+    path('theatre/',include('theatre_dashboard.urls')),
     
 ]
 if settings.DEBUG:
