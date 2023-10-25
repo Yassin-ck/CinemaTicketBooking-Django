@@ -4,10 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import (
     IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
     )
 from rest_framework import status
-from django.db.models import Q
 from ipware import get_client_ip
 from django.contrib.gis.geos import Point
 from authentications.modules.smtp import send_email
@@ -20,7 +18,6 @@ from .models import (
     MyUser,
     UserProfile,
     Location,
-    RequestLocation,
     )   
 from .serializers import (
     PhoneSerilaizer,
@@ -28,8 +25,6 @@ from .serializers import (
     MyTokenSerializer,
     UserProfileViewSerializer,
     GoogleSocialAuthSerializer,
-    LocationSerializer,
-    RequestedLocationSerializer,
     EmailAuthViewSerializer,
     )
 
@@ -54,42 +49,6 @@ class GoogleSocialAuthView(APIView):
         data = ((serializer.validated_data)['auth_token'])
         return Response(data,status=status.HTTP_200_OK)
             
-
-
-@permission_classes([IsAuthenticatedOrReadOnly])
-class SearchLocaition(APIView):
-    
-    def get(self,request):
-        q = request.GET.get('q')
-        Q_base = Q(country__icontains=q) | Q(state__icontains=q) | Q(district__icontains=q) | Q(place__icontains=q)
-        location_data = Location.objects.filter(Q_base)
-        if location_data:
-            serializer = LocationSerializer(location_data,many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({"msg":"Location not found..."}, status=status.HTTP_404_NOT_FOUND)
-
-    
-    def post(self,request):
-        serializer = RequestedLocationSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                RequestLocation.objects.create(
-                    user = request.user,
-                    country = serializer.validated_data.get('country'),
-                    state = serializer.validated_data.get('state'),
-                    district = serializer.validated_data.get('district'),
-                    place = serializer.validated_data.get('place')
-                )
-                subject = "New Location Requested"
-                message = "New location request, check it out ......."
-                email_from = request.user.email
-                recipient_list = [settings.EMAIL_HOST_USER]
-                send_email(subject,message,email_from,recipient_list)  
-                 
-            except:
-                return Response({"msg":"Something went wrong`"})            
-            return Response({"msg":"Your location will be updated soon..."},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
         
 

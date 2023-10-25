@@ -100,15 +100,3 @@ class EmailAuthViewSerializer(serializers.Serializer):
   
   
         
-class LocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Location
-        fields = ('country','state','district','place')
-        
-     
-class RequestedLocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RequestLocation
-        exclude = ('current_location','user')
-        
-    

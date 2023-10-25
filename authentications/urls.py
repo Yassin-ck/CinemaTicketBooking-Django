@@ -6,7 +6,6 @@ from .views import (
     UserProfileView,
     GoogleSocialAuthView,
     CurrentLocation,
-    SearchLocaition,
     EmailAuthView,
     EmailVerification,
     )
@@ -19,5 +18,4 @@ urlpatterns = [
     path('userprofile/phone/',MobilePhoneUpdate.as_view(),name='phone'),
     path("userprofile/phone/otp/", OtpVerification.as_view(), name="otp"),
     path('currentlocation/',CurrentLocation.as_view(),name='currentlocation'),
-    path('searchlocation/',SearchLocaition.as_view(),name='searchlocation')
 ]
