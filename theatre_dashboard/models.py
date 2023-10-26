@@ -9,26 +9,33 @@ from authentications.models import (
 
 
 class TheareOwnerDetails(models.Model):
-    user = models.ForeignKey(MyUser,on_delete=models.PROTECT,related_name='theatreowner')
+    user = models.ForeignKey(MyUser,on_delete=models.PROTECT,related_name='theatreownerdetails')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(max_length=100,unique=True)
     phone = models.CharField(max_length=13,unique=True)
+    alternative_contact = models.CharField(max_length=13,unique=True,null=True,blank=True)
+    id_number = models.CharField(max_length=100)
     id_proof = models.CharField(max_length=255)
-    is_verified = models.BooleanField(default=False,null=True,blank=True)
-
-
-
+    address = models.TextField()
+    is_verified = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)
+    
 
 
 
 class TheatreDetails(models.Model):
-
+    owner = models.ForeignKey(TheareOwnerDetails,on_delete=models.PROTECT,related_name='theatreowner')
     theatre_name = models.CharField(max_length=255)
-    # movies = models.ForeignKey('MovieDetails',on_delete=models.PROTECT)
+    email = models.EmailField(max_length=100,unique=True)
+    # movies = models.ForeignKey('MovieDetails',on_delete=models.PROTECT)    
+    phone = models.CharField(max_length=13,unique=True)
+    alternative_contact = models.CharField(max_length=13,unique=True,null=True,blank=True)
     location = models.ForeignKey(Location,on_delete=models.SET_NULL,null=True)
     num_of_screens = models.IntegerField()  
     certification = models.CharField(max_length=100)
+    is_loginned = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
     
 
 

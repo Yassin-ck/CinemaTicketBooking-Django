@@ -10,16 +10,17 @@ from authentications import views
 from django.db.models import Q
 import random,math
 from rest_framework.decorators import permission_classes
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .theatre_auth import TheatreAuthentication
+from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
 from authentications.models import (
     MyUser,
     )
 from .serializers import (
     TheatreRegistrationSerializer,
     TheatreLoginSerializer,
-    TheatreDetailsFormSerializer,
     RequestedLocationSerializer,
-    LocationSerializer
+    LocationSerializer,
+    TheatrOwnerFormSerializer
 )
 from authentications.models import (
     RequestLocation,
@@ -33,9 +34,12 @@ from .models import (
 
 
 # Create your views here.
-class TheatreRegistration(APIView):
+
+
+@permission_classes([IsAuthenticated])
+class TheatreOwnerFormApplication(APIView):
     def post(self,request):
-        serializer = TheatreRegistrationSerializer(data=request.data)
+        serializer = TheatrOwnerFormSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):   
             user = TheareOwnerDetails.objects.create(
                 user = request.user,
@@ -43,7 +47,10 @@ class TheatreRegistration(APIView):
                 last_name = serializer.validated_data.get('last_name'),
                 email = serializer.validated_data.get('email'),
                 phone = serializer.validated_data.get('phone'),
+                alternative_contact = serializer.validated_data.get('alternative_contact'),
                 id_proof = serializer.validated_data.get('id_proof'),
+                id_number = serializer.validated_data.get('id_number'),
+                address = serializer.validated_data.get('address'),
                 )       
             verification_sid = send_sms(user.phone)
             request.session['verification_sid'] = verification_sid
@@ -54,7 +61,8 @@ class TheatreRegistration(APIView):
 
 
 
-class TheatreVerification(APIView):
+@permission_classes([IsAuthenticated])
+class TheatreOwnerVerification(APIView):
     def post(self,request):
         serializer = OtpSerializer(data=request.data)
         verification_sid = request.session.get('verification_sid')
@@ -65,6 +73,8 @@ class TheatreVerification(APIView):
             if verify_status is not None and verify_status.status == 'approved':
                 try:
                     user = TheareOwnerDetails.objects.get(user=request.user)
+                    user.is_verified = True
+                    user.save()
                     subject = 'New Theatre Request'
                     message = 'New theatre is requested.. check it out !!!'
                     email_from = user.email
@@ -77,9 +87,37 @@ class TheatreVerification(APIView):
         return Response({'error':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
         
         
+
+
+
+@permission_classes([IsAuthenticated])
+class TheatreRegistration(APIView):
     
+    def post(self,request):
+        serializer = TheatreRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            theatre = TheatreDetails.objects.create(
+                owner = TheareOwnerDetails.objects.get(Q(user=request.user) & Q(is_approved=True)),
+                theatre_name = serializer.validated_data.get('theatre_name'),
+                email = serializer.validated_data.get('email'),
+                phone = serializer.validated_data.get('phone'),
+                alternative_contact = serializer.validated_data.get('alternative_contact'),
+                location = serializer.validated_data.get('location'),
+                num_of_screens = serializer.validated_data.get('num_of_screens'),
+                certification = serializer.validated_data.get('certification'),
+            )
+            subject = "New theatre request...."
+            message = 'new theatre request. check it out...'
+            email_from = theatre.email
+            recipient_list = [settings.EMAIL_HOST_USER]
+            send_email(subject,message,email_from,recipient_list)
+            return Response({'msg':'success'},status=status.HTTP_200_OK)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
 
        
+@permission_classes([IsAuthenticated])
 class TheatreLoginRequest(APIView):
     def post(self,request):
         serializer = TheatreLoginSerializer(data=request.data)
@@ -102,6 +140,8 @@ class TheatreLoginRequest(APIView):
     
 
 
+
+@permission_classes([IsAuthenticated])
 class TheatreLoginVerify(APIView):
     def post(self,request):
         serializer = OtpSerializer(data=request.data)
@@ -110,13 +150,13 @@ class TheatreLoginVerify(APIView):
             otp_enterd = serializer.validated_data.get('otp')
             if otp == otp_enterd:
                 email = request.session.get('email')
-                try:
-                    user = MyUser.objects.get(Q(theatreowner__email=email) & Q(theatreowner__is_verified=True))
-                    print(user)
-                except MyUser.DoesNotExist:
-                    return Response({'msgt':"wait for the verification"})
-                token = views.get_tokens_for_user(user)
-                return Response({"msg":token},status=status.HTTP_200_OK)
+                print(email)
+                user = TheatreDetails.objects.get(Q(email=email) & Q(is_verified=True))
+                print(user) 
+                # except MyUser.DoesNotExist:
+                #     return Response({'msgt':"wait for the verification"})
+                # token = views.get_tokens_for_user(user)
+                return Response({"msg":'valid'},status=status.HTTP_200_OK)
             return Response({'msg':"invalid otp.."},status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
@@ -160,12 +200,9 @@ class SearchLocaition(APIView):
        
     
 class TheatreDetailsView(APIView):
-    def post (self,request):
-        serializer = TheatreDetailsFormSerializer(data=request.data)
-        if serializer.is_valid():
-            TheatreDetails.objects.create(
-                theatre_name = serializer.validated_data.get('theatre_name'),   
-                          
-            )
+    def get(self,request):
+        if TheareOwnerDetails.objects.filter(user=request.user).exists():
+            TheatreDetails.objects.filter(owner=request.user.theatreownerdetails.theatredetails)
+        
             
             

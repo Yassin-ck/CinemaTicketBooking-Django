@@ -1,8 +1,15 @@
 from rest_framework import serializers
 from authentications.serializers import MyUserSerializer
-from authentications.models import MyUser,UserProfile,RequestLocation
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from theatre_dashboard.models import TheareOwnerDetails
+from authentications.models import (
+    MyUser,
+    UserProfile,
+    RequestLocation,
+    )
+from theatre_dashboard.models import (
+    TheareOwnerDetails,
+    TheatreDetails,
+    )
 class UserProfileViewSerializer(GeoFeatureModelSerializer):
     user = MyUserSerializer()
     class Meta:
@@ -30,7 +37,20 @@ class  RequestedLocationSerializer(serializers.ModelSerializer):
 class TheatreOwnerDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheareOwnerDetails
-        fields = ('id','first_name','last_name','email','phone','id_proof','is_verified')
+        fields = ('id','first_name','last_name','email','phone','id_proof','is_approved')
+
+
+    def update(self,instance,validated_data):
+        instance.is_approved = validated_data.get('is_approved',instance.is_approved)
+        instance.save()
+        return instance
+    
+    
+    
+class TheatreDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TheatreDetails
+        exclude = ('owner','is_loginned')
 
 
     def update(self,instance,validated_data):
