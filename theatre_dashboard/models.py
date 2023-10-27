@@ -34,13 +34,11 @@ class TheatreDetails(models.Model):
     location = models.ForeignKey(Location,on_delete=models.SET_NULL,null=True)
     num_of_screens = models.IntegerField()  
     certification = models.CharField(max_length=100)
-    is_loginned = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     
 
 
 class ScreenDetails(models.Model):
-
     theatre = models.ForeignKey(TheatreDetails,on_delete=models.CASCADE)
     screen_number = models.IntegerField(null=True,blank=True)
     number_of_seats = models.IntegerField(null=True,blank=True)

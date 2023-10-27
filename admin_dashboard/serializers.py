@@ -50,7 +50,7 @@ class TheatreOwnerDetailsSerializer(serializers.ModelSerializer):
 class TheatreDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
-        exclude = ('owner','is_loginned')
+        exclude = ('owner',)
 
 
     def update(self,instance,validated_data):

@@ -31,9 +31,9 @@ from .serializers import (
 
 
 #JWTToken
-def get_tokens_for_user(user):
+def get_tokens_for_user(user,*args):
 
-    token = MyTokenSerializer.get_token(user)
+    token = MyTokenSerializer.get_token(user,*args)
 
     return {
         'refresh': str(token),
@@ -128,7 +128,7 @@ class UserProfileView(APIView):
         return Response(serializer.data,status=status.HTTP_200_OK)
     
     
-    def patch(self,request):
+    def put(self,request):
         user = UserProfile.objects.get(user_id=request.user.id)
         serializer = UserProfileViewSerializer(user,data=request.data,partial=True)
         if serializer.is_valid():

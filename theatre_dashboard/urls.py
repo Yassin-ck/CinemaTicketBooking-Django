@@ -6,6 +6,7 @@ from .views import (
     TheatreLoginVerify,
     SearchLocaition,
     TheatreRegistration,
+    TheatreDetailsView
     )
 urlpatterns = [
     path('owner/register/',TheatreOwnerFormApplication.as_view(),name='registration'),
@@ -13,6 +14,6 @@ urlpatterns = [
     path('owner/otp/',TheatreOwnerVerification.as_view(),name='otp'),
     path('loginrequest/',TheatreLoginRequest.as_view(),name='loginrequest'),
     path('loginverify/',TheatreLoginVerify.as_view(),name='loginverify'),
-    path('searchlocation/',SearchLocaition.as_view(),name='searchlocation')
-
+    path('searchlocation/',SearchLocaition.as_view(),name='searchlocation'),
+    path('theatreloginview/',TheatreDetailsView.as_view(),name='theatreloginview')
 ]

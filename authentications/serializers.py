@@ -23,7 +23,7 @@ class OtpSerializer(serializers.Serializer):
 
 class MyTokenSerializer(TokenObtainPairSerializer):
     @classmethod
-    def get_token(cls, user):
+    def get_token(cls, user,*args):
         token = super().get_token(user)
         if user.userprofile.phone:
             token['phone'] = user.phone
@@ -31,8 +31,8 @@ class MyTokenSerializer(TokenObtainPairSerializer):
             token['username'] = user.username
         if user.email:
             token['email'] = user.email  
-                
-        
+        if args:
+            token['theatre_email'] = args[0]
         return token
     
   

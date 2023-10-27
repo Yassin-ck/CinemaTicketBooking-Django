@@ -1,11 +1,12 @@
-from rest_framework.authentication import BaseAuthentication
 from .models import TheatreDetails
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.db.models import Q
 
-class TheatreAuthentication(BaseAuthentication):
-    def authenticate(self, request):
-        user = TheatreDetails.objects.filter(Q(id = request.user.theatreownerdetials.theatreowner.id) & Q(is_loginned=True))
-        print(user)
-        if user is not None:
-            return (user,None)
-        return None
+class TheatreAuthentication(JWTAuthentication):
+    def authenticate(self, request):   
+        user, _ = super().authenticate(request)
+        if user  and _.payload['theatre_email']:           
+            return user ,None 
+        raise AuthenticationFailed('Custom authentication failed')
+    

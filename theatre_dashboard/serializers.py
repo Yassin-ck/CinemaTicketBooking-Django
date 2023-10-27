@@ -15,7 +15,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 class TheatrOwnerFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheareOwnerDetails
-        fields = ('first_name','last_name','email','phone','id_proof')
+        fields = ('first_name','last_name','email','phone','id_proof','alternative_contact','id_number','address')
         
 
 class TheatreLoginSerializer(serializers.Serializer):
@@ -44,4 +44,4 @@ class RequestedLocationSerializer(serializers.ModelSerializer):
 class TheatreRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
-        exclude = ('owner','is_loginned')
+        exclude = ('owner',)

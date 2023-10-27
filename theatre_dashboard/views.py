@@ -11,6 +11,8 @@ from django.db.models import Q
 import random,math
 from rest_framework.decorators import permission_classes
 from .theatre_auth import TheatreAuthentication
+from rest_framework.decorators import authentication_classes
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
 from authentications.models import (
     MyUser,
@@ -150,13 +152,12 @@ class TheatreLoginVerify(APIView):
             otp_enterd = serializer.validated_data.get('otp')
             if otp == otp_enterd:
                 email = request.session.get('email')
-                print(email)
-                user = TheatreDetails.objects.get(Q(email=email) & Q(is_verified=True))
-                print(user) 
-                # except MyUser.DoesNotExist:
-                #     return Response({'msgt':"wait for the verification"})
-                # token = views.get_tokens_for_user(user)
-                return Response({"msg":'valid'},status=status.HTTP_200_OK)
+                try:
+                    theatre = TheatreDetails.objects.get(Q(email=email) & Q(is_verified=True))
+                    token = views.get_tokens_for_user(theatre.owner.user,email)
+                    return Response({"msg":'loginned','token':token},status=status.HTTP_200_OK)
+                except MyUser.DoesNotExist:
+                    return Response({'msgt':"You are not Verified.."})
             return Response({'msg':"invalid otp.."},status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
@@ -198,11 +199,14 @@ class SearchLocaition(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
        
-    
+       
+@authentication_classes([TheatreAuthentication])
 class TheatreDetailsView(APIView):
     def get(self,request):
         if TheareOwnerDetails.objects.filter(user=request.user).exists():
-            TheatreDetails.objects.filter(owner=request.user.theatreownerdetails.theatredetails)
-        
+            theatre = TheatreDetails.objects.filter(owner__user=request.user)
+            serializer = TheatreRegistrationSerializer(theatre,many=True)
+            return Response({'theatre':serializer.data})
+            
             
             
