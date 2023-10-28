@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     "debug_toolbar",
     'authentications',
     'admin_dashboard',
@@ -48,7 +49,6 @@ INSTALLED_APPS = [
     'rest_framework_gis',
     'rest_framework_simplejwt',
     'django.contrib.gis',
-    'corsheaders',
     'theatre_dashboard'
     
 ]
@@ -149,9 +149,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'authentications.MyUser'
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
+    "http://localhost:7000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
 ]
-
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

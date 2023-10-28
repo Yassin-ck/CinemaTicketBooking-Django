@@ -17,8 +17,9 @@ class PhoneSerilaizer(serializers.Serializer):
 
 
 class OtpSerializer(serializers.Serializer):
-    otp = serializers.IntegerField()
-    
+    otp = serializers.CharField()
+    email = serializers.EmailField()
+    otp_entered = serializers.CharField()
 
 
 class MyTokenSerializer(TokenObtainPairSerializer):

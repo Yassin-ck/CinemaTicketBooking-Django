@@ -80,7 +80,7 @@ class TheatreOwnerVerification(APIView):
                     subject = 'New Theatre Request'
                     message = 'New theatre is requested.. check it out !!!'
                     email_from = user.email
-                    recipient_list = [settings.EMAIL_HOST_USER]
+                    recipient_list = (settings.EMAIL_HOST_USER,)
                     send_email(subject,message,email_from,recipient_list)
                     return Response({'msg':'Success'},status=status.HTTP_200_OK)
                 except Exception as e:
@@ -111,7 +111,7 @@ class TheatreRegistration(APIView):
             subject = "New theatre request...."
             message = 'new theatre request. check it out...'
             email_from = theatre.email
-            recipient_list = [settings.EMAIL_HOST_USER]
+            recipient_list = (settings.EMAIL_HOST_USER,)
             send_email(subject,message,email_from,recipient_list)
             return Response({'msg':'success'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
@@ -132,7 +132,7 @@ class TheatreLoginRequest(APIView):
                 subject = 'Otp Verification'
                 message = f'Your Otp for login : {otp}'
                 email_from = settings.EMAIL_HOST_USER
-                recipient_list = [email]
+                recipient_list = (email,)
                 send_email(subject,message,email_from,recipient_list)
                 return Response({'msg':'Check Email......'},status=status.HTTP_200_OK)
             except:
@@ -190,7 +190,7 @@ class SearchLocaition(APIView):
                 subject = "New Location Requested"
                 message = "New location request, check it out ......."
                 email_from = request.user.email
-                recipient_list = [settings.EMAIL_HOST_USER]
+                recipient_list = (settings.EMAIL_HOST_USER,)
                 send_email(subject,message,email_from,recipient_list)  
                  
             except:
@@ -202,7 +202,8 @@ class SearchLocaition(APIView):
        
 @authentication_classes([TheatreAuthentication])
 class TheatreDetailsView(APIView):
-    def get(self,request):
+    def get(self,request): 
+        print(request.user,request.auth)   
         if TheareOwnerDetails.objects.filter(user=request.user).exists():
             theatre = TheatreDetails.objects.filter(owner__user=request.user)
             serializer = TheatreRegistrationSerializer(theatre,many=True)

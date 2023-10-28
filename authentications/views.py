@@ -2,18 +2,18 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import permission_classes
-from rest_framework.permissions import (
-    IsAuthenticated,
-    )
 from rest_framework import status
 from ipware import get_client_ip
 from django.contrib.gis.geos import Point
 from authentications.modules.smtp import send_email
 import urllib,json
 from django.conf import settings
+from threading import Thread
+from authentications.modules.utils import send_sms,verify_user_code      #twilio
 import random,math
-#twilio
-from authentications.modules.utils import send_sms,verify_user_code 
+from rest_framework.permissions import (
+    IsAuthenticated,
+    )
 from .models import (
     MyUser,
     UserProfile,
@@ -84,9 +84,9 @@ class CurrentLocation(APIView):
 
 
 
-
 class EmailAuthView(APIView):
     def post(self,request):
+        print(request.data)
         serializer = EmailAuthViewSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data.get("email")
@@ -94,23 +94,27 @@ class EmailAuthView(APIView):
             subject = 'Otp for account verification'
             message = f'Your otp for account verification {otp}'
             email_from = settings.EMAIL_HOST_USER
-            recipient_list = [email]
-            send_email(subject, message, email_from, recipient_list)
-            request.session['email'] = email
-            request.session['otp'] = otp
-            return Response({"email":email},status=status.HTTP_200_OK)
+            recipient_list = (email,)
+            email_thread = Thread(target=send_email, args=(subject, message, email_from, recipient_list))
+            email_thread.start()
+            response_data = {
+                'email':email,
+                'otp':otp
+            }
+            return Response(response_data,status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
             
             
 
 class EmailVerification(APIView):
     def post(self,request):
+        print(request.data)
         serializer = OtpSerializer(data=request.data)
         if serializer.is_valid():
             otp = serializer.validated_data.get('otp')
-            email = request.session.get('email')
-            otp_ = request.session.get('otp')
-            if otp == otp_:
+            email = serializer.validated_data.get('email')
+            otp_entered = serializer.validated_data.get('otp_entered')
+            if otp == otp_entered:
                 user = MyUser.objects.get_or_create(email=email)
                 token = get_tokens_for_user(user[0])
                 return Response({"token":token},status=status.HTTP_200_OK)

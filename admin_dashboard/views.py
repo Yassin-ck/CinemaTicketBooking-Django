@@ -73,7 +73,7 @@ class TheatreOwnerRequest(APIView):
                     Now you can update your theatre details
                     '''
                     email_from = settings.EMAIL_HOST_USER
-                    recipient_list = [details.email]
+                    recipient_list = (details.email,)
                     send_email(subject,message,email_from,recipient_list)
                     return Response({'msg':'verified'},status=status.HTTP_200_OK)
                 else:
@@ -83,7 +83,7 @@ class TheatreOwnerRequest(APIView):
                     Please Contact with our customer service or You can use our message system
                     '''
                     email_from = settings.EMAIL_HOST_USER
-                    recipient_list = [details.email]
+                    recipient_list = (details.email,)
                     send_email(subject,message,email_from,recipient_list)
                     return Response({'msg':'Rejected'},status=status.HTTP_200_OK)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
@@ -118,7 +118,7 @@ class TheatreRequest(APIView):
                     Now You can go with you further details ...           
                     '''
                     email_from = settings.EMAIL_HOST_USER
-                    recipient_list = [details.email]
+                    recipient_list = (details.email,)
                     send_email(subject,message,email_from,recipient_list)
                     return Response({'msg':'verified'},status=status.HTTP_200_OK)
                 subject = 'Theatre Request Rejected...'
@@ -127,7 +127,7 @@ class TheatreRequest(APIView):
                 Please Contact with our customer service or You can use our message system   
                 '''
                 email_from = settings.EMAIL_HOST_USER
-                recipient_list = [details.email]
+                recipient_list = (details.email,)
                 send_email(subject,message,email_from,recipient_list)
                 return Response({'msg':'Rejected'},status=status.HTTP_200_OK)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
