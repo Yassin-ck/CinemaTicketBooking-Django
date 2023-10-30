@@ -1,26 +1,14 @@
 from rest_framework import serializers
-from .models import (
-    MyUser,
-    UserProfile,
-    Location,
-    RequestLocation,  
-    )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .modules import google
 from rest_framework.exceptions import AuthenticationFailed
 from django.conf import settings
 from authentications.modules.register import register_social_user
-
-class PhoneSerilaizer(serializers.Serializer):
-    phone = serializers.CharField()
-
-
-class OtpSerializer(serializers.Serializer):
-    otp = serializers.CharField()
-    email = serializers.EmailField()
-    otp_entered = serializers.CharField()
-
+from .models import (
+    MyUser,
+    UserProfile,  
+    )
 
 class MyTokenSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -93,10 +81,6 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
             instance.user.email = validated_user_data.get('email',instance.user.email)
         return instance
         
-  
-  
-class EmailAuthViewSerializer(serializers.Serializer):
-    email = serializers.EmailField()
   
   
         

@@ -18,9 +18,6 @@ class TheatrOwnerFormSerializer(serializers.ModelSerializer):
         fields = ('first_name','last_name','email','phone','id_proof','alternative_contact','id_number','address')
         
 
-class TheatreLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    
     
         
         

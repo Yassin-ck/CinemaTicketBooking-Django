@@ -19,7 +19,6 @@ from authentications.models import (
     )
 from .serializers import (
     TheatreRegistrationSerializer,
-    TheatreLoginSerializer,
     RequestedLocationSerializer,
     LocationSerializer,
     TheatrOwnerFormSerializer
@@ -122,22 +121,20 @@ class TheatreRegistration(APIView):
 @permission_classes([IsAuthenticated])
 class TheatreLoginRequest(APIView):
     def post(self,request):
-        serializer = TheatreLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data.get('email')
-            try:
-                otp = math.floor(random.randint(100000,999999))
-                request.session['otp'] = otp
-                request.session['email'] = email
-                subject = 'Otp Verification'
-                message = f'Your Otp for login : {otp}'
-                email_from = settings.EMAIL_HOST_USER
-                recipient_list = (email,)
-                send_email(subject,message,email_from,recipient_list)
-                return Response({'msg':'Check Email......'},status=status.HTTP_200_OK)
-            except:
-                return Response({"msg":"Something Went Wrong..."},status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+        email = request.data.get('email')
+        try:
+            otp = math.floor(random.randint(100000,999999))
+            request.session['otp'] = otp
+            request.session['email'] = email
+            subject = 'Otp Verification'
+            message = f'Your Otp for login : {otp}'
+            email_from = settings.EMAIL_HOST_USER
+            recipient_list = (email,)
+            send_email(subject,message,email_from,recipient_list)
+            return Response({'msg':'Check Email......'},status=status.HTTP_200_OK)
+        except:
+            return Response({"msg":"Something Went Wrong..."},status=status.HTTP_400_BAD_REQUEST)
     
     
 
@@ -203,7 +200,6 @@ class SearchLocaition(APIView):
 @authentication_classes([TheatreAuthentication])
 class TheatreDetailsView(APIView):
     def get(self,request): 
-        print(request.user,request.auth)   
         if TheareOwnerDetails.objects.filter(user=request.user).exists():
             theatre = TheatreDetails.objects.filter(owner__user=request.user)
             serializer = TheatreRegistrationSerializer(theatre,many=True)

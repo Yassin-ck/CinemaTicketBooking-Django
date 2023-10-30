@@ -20,12 +20,11 @@ from .models import (
     Location,
     )   
 from .serializers import (
-    PhoneSerilaizer,
-    OtpSerializer,
+
     MyTokenSerializer,
     UserProfileViewSerializer,
     GoogleSocialAuthSerializer,
-    EmailAuthViewSerializer,
+ 
     )
 
 
@@ -34,7 +33,7 @@ from .serializers import (
 def get_tokens_for_user(user,*args):
 
     token = MyTokenSerializer.get_token(user,*args)
-
+    
     return {
         'refresh': str(token),
         'access': str(token.access_token),
@@ -86,50 +85,45 @@ class CurrentLocation(APIView):
 
 class EmailAuthView(APIView):
     def post(self,request):
-        print(request.data)
-        serializer = EmailAuthViewSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data.get("email")
-            otp = math.floor((random.randint(100000,999999)))
-            subject = 'Otp for account verification'
-            message = f'Your otp for account verification {otp}'
-            email_from = settings.EMAIL_HOST_USER
-            recipient_list = (email,)
-            email_thread = Thread(target=send_email, args=(subject, message, email_from, recipient_list))
-            email_thread.start()
-            response_data = {
-                'email':email,
-                'otp':otp
-            }
-            return Response(response_data,status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        email = request.data.get('email')
+        otp = math.floor((random.randint(100000,999999)))
+        subject = 'Otp for account verification'
+        message = f'Your otp for account verification {otp}'
+        email_from = settings.EMAIL_HOST_USER
+        recipient_list = (email,)
+        email_thread = Thread(target=send_email, args=(subject, message, email_from, recipient_list))
+        email_thread.start()
+        response_data = {
+            'email':email,
+            'otp':otp
+        }
+        return Response(response_data,status=status.HTTP_200_OK)
             
             
 
 class EmailVerification(APIView):
     def post(self,request):
-        print(request.data)
-        serializer = OtpSerializer(data=request.data)
-        if serializer.is_valid():
-            otp = serializer.validated_data.get('otp')
-            email = serializer.validated_data.get('email')
-            otp_entered = serializer.validated_data.get('otp_entered')
-            if otp == otp_entered:
-                user = MyUser.objects.get_or_create(email=email)
-                token = get_tokens_for_user(user[0])
-                return Response({"token":token},status=status.HTTP_200_OK)
-            return Response({"msg":"Invalid Otp..."})
+        otp = request.data.get('otp')
+        email = request.data.get('email')
+        otp_entered = request.data.get('otp_entered')
+        if otp == otp_entered:
+            user = MyUser.objects.get_or_create(email=email)
+            token = get_tokens_for_user(user[0])
+            return Response({"token":token},status=status.HTTP_200_OK)
+        return Response({"msg":"Invalid Otp..."})
             
             
 
 @permission_classes([IsAuthenticated])
 class UserProfileView(APIView):
     def get(self,request):
-        
-        print(request.user)
         user = UserProfile.objects.get(user_id=request.user.id)
         serializer = UserProfileViewSerializer(user)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        response_data = {
+            "user":serializer.data['id'],
+            "userprofile":serializer.data['properties']
+        }
+        return Response(response_data,status=status.HTTP_200_OK)
     
     
     def put(self,request):
@@ -153,17 +147,15 @@ class UserProfileView(APIView):
 @permission_classes([IsAuthenticated])
 class MobilePhoneUpdate(APIView):
     def post(self,request):
-        serializer =  PhoneSerilaizer(data=request.data)
-        if serializer.is_valid(): 
-            phone = serializer.validated_data.get('phone')
-            try:
-                verification_sid = send_sms(phone)
-                request.session['verification_sid'] = verification_sid
-                return Response({"sid":verification_sid},status=status.HTTP_201_CREATED)
+        phone = request.data.get('phone')
+        try:
+            verification_sid = send_sms(phone)
+            request.session['verification_sid'] = verification_sid
+            return Response({"sid":verification_sid},status=status.HTTP_201_CREATED)
 
-            except Exception as e:
-                print(e)
-            return Response({'msg': 'Cant send otp!!!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            print(e)
+        return Response({'msg': 'Cant send otp!!!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -173,20 +165,18 @@ class MobilePhoneUpdate(APIView):
 @permission_classes([IsAuthenticated])
 class OtpVerification(APIView):
     def post(self, request):
-        serializer = OtpSerializer(data=request.data)  
-        if serializer.is_valid():
-            otp = serializer.validated_data.get('otp')
-            verification_sid = request.session.get('verification_sid')
-            try:
-                verification_check = verify_user_code(verification_sid, otp)
-            except:
-                return Response({'msg':'Something Went Wrong...'})
-            if verification_check.status == 'approved':            
-                    response_data = {
-                        "msg":"Success",
-                    }                                               
-                    return Response(response_data)
-            return Response({'msg': 'Something Went Wrong...'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response(serializer.errors)
+       
+        otp = request.data.get('otp')
+        verification_sid = request.session.get('verification_sid')
+        try:
+            verification_check = verify_user_code(verification_sid, otp)
+        except:
+            return Response({'msg':'Something Went Wrong...'})
+        if verification_check.status == 'approved':            
+                response_data = {
+                    "msg":"Success",
+                }                                               
+                return Response(response_data)
+        return Response({'msg': 'Something Went Wrong...'},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
