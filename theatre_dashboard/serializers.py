@@ -1,15 +1,12 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from .models import (
     TheareOwnerDetails,
     TheatreDetails,
-    ScreenDetails,
     Location,
     )
 from authentications.models import (
     RequestLocation,
 )
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class TheatrOwnerFormSerializer(serializers.ModelSerializer):

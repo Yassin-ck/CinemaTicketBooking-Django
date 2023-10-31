@@ -62,8 +62,14 @@ class MyUserSerializer(serializers.ModelSerializer):
         fields = ('id','username','email')
 
 
+
+class UserDetailsSerilaizer(serializers.Serializer):
+    username = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
+
+
 class UserProfileViewSerializer(GeoFeatureModelSerializer):
-    user = MyUserSerializer()
+    user = UserDetailsSerilaizer()
     class Meta:
         model = UserProfile
         geo_field = 'location'
@@ -71,6 +77,7 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
         
         
     def update(self,instance,validated_data):
+        print('hiih')
         instance.first_name = validated_data.get('first_name',instance.first_name)
         instance.last_name = validated_data.get('last_name',instance.last_name)
         instance.address = validated_data.get('address',instance.address)
@@ -79,8 +86,9 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
         if validated_user_data:          
             instance.user.username = validated_user_data.get('username',instance.user.username)
             instance.user.email = validated_user_data.get('email',instance.user.email)
+            instance.save()
         return instance
-        
+
   
   
         

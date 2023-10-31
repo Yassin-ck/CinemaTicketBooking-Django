@@ -2,7 +2,6 @@ from rest_framework import serializers
 from authentications.serializers import MyUserSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from authentications.models import (
-    MyUser,
     UserProfile,
     RequestLocation,
     )

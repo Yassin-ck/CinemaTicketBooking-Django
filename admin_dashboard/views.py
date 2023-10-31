@@ -7,6 +7,9 @@ from authentications.modules.smtp import send_email
 from django.conf import settings
 from rest_framework.views import APIView
 from django.db.models import Q
+from .pagination import UserProfilePagination
+import math
+from rest_framework.pagination import PageNumberPagination
 from theatre_dashboard.models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -18,18 +21,27 @@ from .serializers import (
     TheatreDetailsSerializer,
     )
 from authentications.models import (
-    MyUser,
     UserProfile,
     RequestLocation,
     )
 # Create your views here.
 
+
 @permission_classes([IsAdminUser])
 class UserProfileViewBYAdmin(APIView):
     def get(self,request):
         user_profile = UserProfile.objects.select_related('user')
-        serializer = UserProfileViewSerializer(user_profile,many=True)
-        return Response(serializer.data)
+        number_of_users = len(user_profile)
+        paginator = UserProfilePagination()
+        number_of_page = number_of_users//paginator.page_size
+        result_page = paginator.paginate_queryset(user_profile,request)
+        serializer = UserProfileViewSerializer(result_page,many=True,context={'request':request})
+        response_data = {     
+        'user' : serializer.data['features'][0]['id'],
+        'userprofile' : serializer.data['features'][0]['properties'],
+        'page_number' : number_of_page
+        }
+        return Response(response_data,status=status.HTTP_200_OK)
     
 
 @permission_classes([IsAdminUser])
