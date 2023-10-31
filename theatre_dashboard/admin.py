@@ -4,6 +4,7 @@ from .models import (
     TheatreDetails,
     ScreenDetails,
 )
+
 # Register your models here.
 admin.site.register(TheareOwnerDetails)
 admin.site.register(TheatreDetails)

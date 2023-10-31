@@ -5,33 +5,60 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('authentications', '0001_initial'),
-        ('theatre_dashboard', '0004_remove_theareownerdetails_password'),
+        ("authentications", "0001_initial"),
+        ("theatre_dashboard", "0004_remove_theareownerdetails_password"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TheatreDetails',
+            name="TheatreDetails",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('theatre_name', models.CharField(max_length=255)),
-                ('num_of_screens', models.IntegerField()),
-                ('certification', models.FileField(upload_to='')),
-                ('location', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='authentications.location')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("theatre_name", models.CharField(max_length=255)),
+                ("num_of_screens", models.IntegerField()),
+                ("certification", models.FileField(upload_to="")),
+                (
+                    "location",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="authentications.location",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ScreenDetails',
+            name="ScreenDetails",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('screen_number', models.IntegerField(blank=True, null=True)),
-                ('number_of_seats', models.IntegerField(blank=True, null=True)),
-                ('row_count', models.IntegerField(blank=True, null=True)),
-                ('column_count', models.IntegerField(blank=True, null=True)),
-                ('seat_arrangement', models.JSONField(blank=True, null=True)),
-                ('theatre', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='theatre_dashboard.theatredetails')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("screen_number", models.IntegerField(blank=True, null=True)),
+                ("number_of_seats", models.IntegerField(blank=True, null=True)),
+                ("row_count", models.IntegerField(blank=True, null=True)),
+                ("column_count", models.IntegerField(blank=True, null=True)),
+                ("seat_arrangement", models.JSONField(blank=True, null=True)),
+                (
+                    "theatre",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="theatre_dashboard.theatredetails",
+                    ),
+                ),
             ],
         ),
     ]

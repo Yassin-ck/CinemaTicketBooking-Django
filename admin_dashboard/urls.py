@@ -1,10 +1,5 @@
 from django.urls import path
-from .views import (
-    UserProfileViewBYAdmin,
-    TheatreOwnerRequest,
-    TheatreRequest
-    
-    )
+from .views import UserProfileViewBYAdmin, TheatreOwnerRequest, TheatreRequest
 
 urlpatterns = [
     path("users/", UserProfileViewBYAdmin.as_view(), name="users"),

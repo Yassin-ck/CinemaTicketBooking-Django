@@ -6,26 +6,29 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('theatre_dashboard', '0002_alter_theareownerdetails_phone'),
+        ("theatre_dashboard", "0002_alter_theareownerdetails_phone"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='theareownerdetails',
-            name='email',
+            model_name="theareownerdetails",
+            name="email",
             field=models.EmailField(max_length=100, unique=True),
         ),
         migrations.AlterField(
-            model_name='theareownerdetails',
-            name='phone',
+            model_name="theareownerdetails",
+            name="phone",
             field=models.CharField(max_length=13, unique=True),
         ),
         migrations.AlterField(
-            model_name='theareownerdetails',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='theatreowner', to=settings.AUTH_USER_MODEL),
+            model_name="theareownerdetails",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="theatreowner",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

@@ -5,48 +5,52 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('theatre_dashboard', '0007_theareownerdetails_address_and_more'),
+        ("theatre_dashboard", "0007_theareownerdetails_address_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='theareownerdetails',
-            name='id_number',
+            model_name="theareownerdetails",
+            name="id_number",
             field=models.CharField(default=1, max_length=100),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='theatredetails',
-            name='alternative_contact',
+            model_name="theatredetails",
+            name="alternative_contact",
             field=models.CharField(blank=True, max_length=13, null=True, unique=True),
         ),
         migrations.AddField(
-            model_name='theatredetails',
-            name='email',
+            model_name="theatredetails",
+            name="email",
             field=models.EmailField(default=1, max_length=100, unique=True),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='theatredetails',
-            name='is_approved',
+            model_name="theatredetails",
+            name="is_approved",
             field=models.BooleanField(blank=True, default=False, null=True),
         ),
         migrations.AddField(
-            model_name='theatredetails',
-            name='is_loginned',
+            model_name="theatredetails",
+            name="is_loginned",
             field=models.BooleanField(blank=True, default=False, null=True),
         ),
         migrations.AddField(
-            model_name='theatredetails',
-            name='owner',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, related_name='theatreowner', to='theatre_dashboard.theareownerdetails'),
+            model_name="theatredetails",
+            name="owner",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="theatreowner",
+                to="theatre_dashboard.theareownerdetails",
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='theatredetails',
-            name='phone',
+            model_name="theatredetails",
+            name="phone",
             field=models.CharField(default=1, max_length=13, unique=True),
             preserve_default=False,
         ),
