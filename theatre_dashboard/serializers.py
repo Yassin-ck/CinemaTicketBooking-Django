@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.fields import empty
 from .models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -10,6 +11,8 @@ from authentications.models import (
 
 
 class TheatrOwnerFormSerializer(serializers.ModelSerializer):
+    id_proof = serializers.ImageField()
+
     class Meta:
         model = TheareOwnerDetails
         fields = (
@@ -22,6 +25,10 @@ class TheatrOwnerFormSerializer(serializers.ModelSerializer):
             "id_number",
             "address",
         )
+
+    def __init__(self, instance=None, data=None, **kwargs):
+        print(data)
+        super().__init__(instance, data, **kwargs)
 
 
 class LocationSerializer(serializers.ModelSerializer):

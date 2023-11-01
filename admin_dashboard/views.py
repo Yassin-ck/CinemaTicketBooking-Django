@@ -19,6 +19,7 @@ from .serializers import (
     TheatreOwnerDetailsSerializer,
     TheatreDetailsSerializer,
     TheatreOwnerListSerializer,
+    TheatreListSerializer,
 )
 from authentications.models import (
     UserProfile,
@@ -70,10 +71,13 @@ class TheatreOwnerRequest(APIView):
             serializer = TheatreOwnerListSerializer(details, many=True)
         else:
             details = TheareOwnerDetails.objects.get(id=pk)
-            print(details)
             serializer = TheatreOwnerDetailsSerializer(details)
         print(serializer.data)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+            content_type="multipart/formdata",
+        )
 
     def put(self, request, pk=None):
         if pk:
@@ -110,11 +114,13 @@ class TheatreOwnerRequest(APIView):
 class TheatreRequest(APIView):
     def get(self, request, pk=None):
         if not pk:
-            details = TheatreDetails.objects.filter(is_verified=False)
-            serializer = TheatreDetailsSerializer(details, many=True)
+            details = TheatreDetails.objects.filter(is_approved=False).only(
+                "id", "theatre_name", "email"
+            )
+            serializer = TheatreListSerializer(details, many=True)
         else:
-            details = TheatreDetails.objects.get(id=pk)
-            serializer = TheatreDetailsSerializer(details)
+            details = TheatreDetails.objects.filter(id=pk).select_related("owner")
+            serializer = TheatreDetailsSerializer(details[0])
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
@@ -124,7 +130,7 @@ class TheatreRequest(APIView):
                 details, data=request.data, partial=True
             )
             if serializer.is_valid():
-                verification = serializer.validated_data.get("is_verified")
+                verification = serializer.validated_data.get("is_approved")
                 serializer.save()
                 if verification:
                     subject = "Request Approved..."

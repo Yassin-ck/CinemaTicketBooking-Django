@@ -16,7 +16,7 @@ class TheareOwnerDetails(models.Model):
         max_length=13, unique=True, null=True, blank=True
     )
     id_number = models.CharField(max_length=100)
-    id_proof = models.CharField(max_length=255)
+    id_proof = models.ImageField(upload_to="owner_id_proof/")
     address = models.TextField()
     is_verified = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
@@ -34,9 +34,9 @@ class TheatreDetails(models.Model):
         max_length=13, unique=True, null=True, blank=True
     )
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
-    num_of_screens = models.IntegerField()
-    certification = models.CharField(max_length=100)
-    is_verified = models.BooleanField(default=False)
+    num_of_screens = models.CharField(max_length=2)
+    certification = models.ImageField(upload_to="TheatreCertification/")
+    is_approved = models.BooleanField(default=False)
 
 
 class ScreenDetails(models.Model):

@@ -11,6 +11,7 @@ import random, math
 from rest_framework.decorators import permission_classes
 from .theatre_auth import TheatreAuthentication
 from rest_framework.decorators import authentication_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from authentications.models import (
     MyUser,
@@ -34,7 +35,7 @@ from .models import TheareOwnerDetails, TheatreDetails, Location
 class TheatreOwnerFormApplication(APIView):
     def post(self, request):
         serializer = TheatrOwnerFormSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             user = TheareOwnerDetails.objects.create(
                 user=request.user,
                 first_name=serializer.validated_data.get("first_name"),
@@ -51,8 +52,9 @@ class TheatreOwnerFormApplication(APIView):
             verification_sid = send_sms(user.phone)
             return Response(
                 {"verification_sid": verification_sid, "msg": "Otp Sent Succesfully"},
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
             )
+        print(serializer.errors)
         return Response(
             {"msg": "Wrong", "errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
@@ -63,9 +65,9 @@ class TheatreOwnerFormApplication(APIView):
 class TheatreOwnerVerification(APIView):
     def post(self, request):
         verification_sid = request.data.get("verification_sid")
-        otp_entered = request.data.get("otp")
+        otp_entered = request.data.get("otp_entered")
         verify_status = verify_user_code(verification_sid, otp_entered)
-        print(verify_status.status)
+        print(verify_status)
         if verify_status is not None and verify_status.status == "approved":
             try:
                 user = TheareOwnerDetails.objects.get(user=request.user)
@@ -89,7 +91,7 @@ class TheatreRegistration(APIView):
         if serializer.is_valid():
             theatre = TheatreDetails.objects.create(
                 owner=TheareOwnerDetails.objects.get(
-                    Q(user=request.user) & Q(is_approved=True)
+                    Q(user=request.user) & Q(is_approved=False)
                 ),
                 theatre_name=serializer.validated_data.get("theatre_name"),
                 email=serializer.validated_data.get("email"),
@@ -127,6 +129,7 @@ class TheatreLoginRequest(APIView):
             return Response(
                 {"msg": "Something Went Wrong..."}, status=status.HTTP_400_BAD_REQUEST
             )
+
 
 
 @permission_classes([IsAuthenticated])

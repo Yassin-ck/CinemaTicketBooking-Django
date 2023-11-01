@@ -38,6 +38,8 @@ class TheatreOwnerListSerializer(serializers.ModelSerializer):
 
 
 class TheatreOwnerDetailsSerializer(serializers.ModelSerializer):
+    id_proof = serializers.ImageField()
+
     class Meta:
         model = TheareOwnerDetails
         fields = (
@@ -58,12 +60,29 @@ class TheatreOwnerDetailsSerializer(serializers.ModelSerializer):
         return instance
 
 
-class TheatreDetailsSerializer(serializers.ModelSerializer):
+class TheatreListSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
-        exclude = ("owner",)
+        fields = ("id", "theatre_name", "email")
+
+
+class TheatreDetailsSerializer(serializers.ModelSerializer):
+    owner = TheatreOwnerDetailsSerializer()
+
+    class Meta:
+        model = TheatreDetails
+        fields = (
+            "id",
+            "theatre_name",
+            "email",
+            "phone",
+            "alternative_contact",
+            "num_of_screens",
+            "certification",
+            "owner",
+        )
 
     def update(self, instance, validated_data):
-        instance.is_verified = validated_data.get("is_verified", instance.is_verified)
+        instance.is_approved = validated_data.get("is_approved", instance.is_approved)
         instance.save()
         return instance
