@@ -19,6 +19,7 @@ from .models import (
     Location,
 )
 from .serializers import (
+    UserEmailSerializer,
     MyTokenSerializer,
     UserProfileViewSerializer,
     GoogleSocialAuthSerializer,
@@ -73,9 +74,15 @@ class CurrentLocation(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class EmailAuthView(APIView):
+class EmailAuthAndUpdationView(APIView):
     def post(self, request):
         email = request.data.get("email")
+        if request.user.is_authenticated :
+            if request.data.get('email') == request.user.email:
+                return Response({'msg':"No Changes"},status=status.HTTP_400_BAD_REQUEST)
+            else:
+                serializer = UserEmailSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
         otp = math.floor((random.randint(100000, 999999)))
         subject = "Otp for account verification"
         message = f"Your otp for account verification {otp}"
@@ -90,37 +97,42 @@ class EmailAuthView(APIView):
 
 
 class EmailVerification(APIView):
-    def post(self, request):
-        print(request.data)
+    def post(self, request): 
         otp = request.data.get("otp")
         email = request.data.get("email")
         otp_entered = request.data.get("otp_entered")
         if int(otp) == int(otp_entered):
-            user = MyUser.objects.get_or_create(email=email)
-            token = get_tokens_for_user(user[0])
-            return Response({"token": token}, status=status.HTTP_200_OK)
-        return Response({"msg": "Invalid Otp..."}, status=status.HTTP_401_UNAUTHORIZED)
-
+            if not request.user.is_authenticated:
+                user = MyUser.objects.get_or_create(email=email)
+                token = get_tokens_for_user(user[0])
+                return Response({"token": token}, status=status.HTTP_200_OK)
+            else:
+                user = request.user
+                user.email = email
+                user.save() 
+                return Response({'msg':"Email Updated Succesfully"})                
+        return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+               
+        
+        
 
 @permission_classes([IsAuthenticated])
 class UserProfileView(APIView):
     def get(self, request):
-        user = UserProfile.objects.filter(user_id=request.user.id).select_related(
-            "user"
-        )
+        user = UserProfile.objects.filter(user_id=request.user.id).select_related("user")
         serializer = UserProfileViewSerializer(user[0])
         response_data = {
             "user": serializer.data["id"],
             "userprofile": serializer.data["properties"],
         }
-
         return Response(response_data, status=status.HTTP_200_OK)
 
     def put(self, request):
         user = UserProfile.objects.get(user_id=request.user.id)
         print(request.data)
         serializer = UserProfileViewSerializer(user, data=request.data, partial=True)
-        print("hi")
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -130,6 +142,8 @@ class UserProfileView(APIView):
         user = MyUser.objects.get(id=request.user.id)
         user.delete()
         return Response({"msg": "user deleted ..."}, status=status.HTTP_200_OK)
+
+
 
 
 # Updating Mobile Number
@@ -159,11 +173,10 @@ class OtpVerification(APIView):
         except:
             return Response({"msg": "Something Went Wrong..."})
         if verification_check.status == "approved":
-            response_data = {
-                "msg": "Success",
-            }
+            response_data = {"msg": "Success", }
             return Response(response_data)
         return Response(
             {"msg": "Something Went Wrong..."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+                )
+
