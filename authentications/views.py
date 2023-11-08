@@ -10,6 +10,7 @@ from django.conf import settings
 from threading import Thread
 from authentications.modules.utils import send_sms, verify_user_code  # twilio
 import random, math
+from django.db.models import Q
 from rest_framework.permissions import (
     IsAuthenticated,
 )
@@ -19,6 +20,7 @@ from .models import (
     Location,
 )
 from .serializers import (
+    UserProfilePhoneSerializer,
     UserEmailSerializer,
     MyTokenSerializer,
     UserProfileViewSerializer,
@@ -71,10 +73,16 @@ class CurrentLocation(APIView):
                 place=data["city"],
                 coordinates=point,
             )
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(data['county'], status=status.HTTP_200_OK)
 
 
 class EmailAuthAndUpdationView(APIView):
+    def get(self,request):
+        if request.user.is_authenticated :
+            return Response({'email':request.user.email},status=status.HTTP_200_OK)
+        return Response({'msg':'error'},status=status.HTTP_400_BAD_REQUEST)
+        
+        
     def post(self, request):
         email = request.data.get("email")
         if request.user.is_authenticated :
@@ -116,25 +124,25 @@ class EmailVerification(APIView):
     
                
         
-        
 
 @permission_classes([IsAuthenticated])
 class UserProfileView(APIView):
     def get(self, request):
-        user = UserProfile.objects.filter(user_id=request.user.id).select_related("user")
-        serializer = UserProfileViewSerializer(user[0])
+        user = UserProfile.objects.filter(user_id=request.user.id).select_related("user")[0]
+        serializer = UserProfileViewSerializer(user)
         response_data = {
-            "user": serializer.data["id"],
-            "userprofile": serializer.data["properties"],
+            "user": serializer.data["user"],
+            "userprofile": serializer.data,
+            "phone":serializer.data['phone']
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
     def put(self, request):
         user = UserProfile.objects.get(user_id=request.user.id)
-        print(request.data)
         serializer = UserProfileViewSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -149,17 +157,23 @@ class UserProfileView(APIView):
 # Updating Mobile Number
 @permission_classes([IsAuthenticated])
 class MobilePhoneUpdate(APIView):
+    
+    def get(self,request):
+        return Response({'phone':request.user.userprofile.phone[3:]},status=status.HTTP_200_OK)
+    
     def post(self, request):
-        print(request.data)
-        phone = request.data.get("phone")
-        try:
+        print(request.data,'kokona')
+        serializer = UserProfilePhoneSerializer(data=request.data)
+        if serializer.is_valid():
+            print(serializer.data,'kkona')
+            phone = serializer.validated_data.get('phone')
+            
             verification_sid = send_sms(phone)
-            print(verification_sid)
-            return Response({"sid": verification_sid}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            print(e)
-        return Response({"msg": "Cant send otp!!!"}, status=status.HTTP_400_BAD_REQUEST)
+            print(verification_sid,'kona')
+            if verification_sid is not None:
+                return Response({"sid": verification_sid}, status=status.HTTP_200_OK)
+            return Response({"msg": "Cant send otp!!!"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # OTPVerification
@@ -173,10 +187,13 @@ class OtpVerification(APIView):
         except:
             return Response({"msg": "Something Went Wrong..."})
         if verification_check.status == "approved":
+            user = request.user.userprofile
+            user.phone = verification_check.to
+            user.save()
+            
             response_data = {"msg": "Success", }
             return Response(response_data)
         return Response(
             {"msg": "Something Went Wrong..."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
-

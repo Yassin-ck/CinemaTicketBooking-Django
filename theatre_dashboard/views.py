@@ -156,10 +156,11 @@ class TheatreLoginVerify(APIView):
 class SearchLocaition(APIView):
     def get(self, request):
         q = request.GET.get("q")
+        if len(q) == 0:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         Q_base = (
-            Q(country__icontains=q)
-            | Q(state__icontains=q)
-            | Q(district__icontains=q)
+
+             Q(district__icontains=q)
             | Q(place__icontains=q)
         )
         location_data = Location.objects.filter(Q_base)

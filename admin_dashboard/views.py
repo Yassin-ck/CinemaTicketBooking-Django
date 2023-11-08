@@ -153,3 +153,5 @@ class TheatreRequest(APIView):
                 send_email(subject, message, email_from, recipient_list)
                 return Response({"msg": "Rejected"}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+

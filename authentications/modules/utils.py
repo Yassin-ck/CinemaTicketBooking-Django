@@ -15,7 +15,8 @@ def send_sms(phone_number):
         ).verifications.create(to=phone_number, channel="sms")
         print(verification.sid, "lllll")
         return verification.sid
-    except:
+    except Exception as e:
+        print(e)
         return
 
 

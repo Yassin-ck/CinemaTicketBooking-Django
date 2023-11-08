@@ -85,7 +85,6 @@ class UserProfile(models.Model):
         MyUser, on_delete=models.CASCADE, primary_key=True, related_name="userprofile"
     )
     phone = models.CharField(max_length=20, unique=True, null=True)
-    first_name = models.CharField(max_length=30, null=True)
-    last_name = models.CharField(max_length=30, null=True)
-    address = models.TextField(null=True)
-    location = models.PointField(srid=4326, null=True)
+    first_name = models.CharField(max_length=30, null=True,blank=True)
+    last_name = models.CharField(max_length=30, null=True,blank=True)
+    address = models.TextField(null=True,blank=True)

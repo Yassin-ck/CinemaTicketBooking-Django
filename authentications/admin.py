@@ -23,7 +23,6 @@ class UserProfiileAdmin(OSMGeoAdmin):
         "last_name",
         "phone",
         "address",
-        "location",
     )
 
 

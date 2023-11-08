@@ -16,7 +16,7 @@ class MyTokenSerializer(TokenObtainPairSerializer):
     def get_token(cls, user, *args):
         token = super().get_token(user)
         if user.userprofile.phone:
-            token["phone"] = user.phone
+            token["phone"] = user.userprofile.phone
         if user.username:
             token["username"] = user.username
         if user.email:
@@ -64,12 +64,11 @@ class UserDetailsSerilaizer(serializers.Serializer):
     email = serializers.EmailField(required=False)
 
 
-class UserProfileViewSerializer(GeoFeatureModelSerializer):
+class UserProfileViewSerializer(serializers.ModelSerializer):
     user = UserDetailsSerilaizer()
 
     class Meta:
         model = UserProfile
-        geo_field = "location"
         fields = ("user_id", "first_name", "last_name", "address", "phone", "user")
 
     def update(self, instance, validated_data):
@@ -78,11 +77,15 @@ class UserProfileViewSerializer(GeoFeatureModelSerializer):
         instance.address = validated_data.get("address", instance.address)
 
         validated_user_data = validated_data.pop("user", None)
+        print(validated_user_data)
         if validated_user_data:
             instance.user.username = validated_user_data.get(
                 "username", instance.user.username
             )
-            instance.save()
+        instance.save()
+        instance.user.save()
+        print(instance.user.username)
+        print(instance)
         return instance
 
 
@@ -90,3 +93,13 @@ class UserEmailSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = ('email',) 
+        
+        
+        
+
+class UserProfilePhoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ('phone',)
+        
+  
