@@ -2,7 +2,6 @@ from authentications.models import MyUser
 from django.contrib.auth import authenticate
 from django.conf import settings
 from authentications import views
-from rest_framework.exceptions import AuthenticationFailed
 
 
 def register_social_user(user_id, email, name):

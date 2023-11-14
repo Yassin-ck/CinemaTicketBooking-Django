@@ -16,7 +16,7 @@ class TheareOwnerDetails(models.Model):
         max_length=13, unique=True, null=True, blank=True
     )
     id_number = models.CharField(max_length=100)
-    id_proof = models.ImageField(upload_to="owner_id_proof/")
+    id_proof = models.ImageField(upload_to="owner_id_proof/",null=True,blank=True)
     address = models.TextField()
     is_verified = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
@@ -40,9 +40,19 @@ class TheatreDetails(models.Model):
 
 
 class ScreenDetails(models.Model):
-    theatre = models.ForeignKey(TheatreDetails, on_delete=models.CASCADE)
+    theatre = models.ForeignKey(TheatreDetails, on_delete=models.CASCADE,related_name='screen_details')
     screen_number = models.IntegerField(null=True, blank=True)
     number_of_seats = models.IntegerField(null=True, blank=True)
     row_count = models.IntegerField(null=True, blank=True)
     column_count = models.IntegerField(null=True, blank=True)
-    seat_arrangement = models.JSONField(null=True, blank=True)
+    
+class ScreenSeatArrangement(models.Model):
+    screen = models.OneToOneField(ScreenDetails,primary_key=True,on_delete=models.CASCADE)
+    STATUS = [
+        ("NONE", "WHITE"),
+        ("BOOKED", "WHITE"),
+        ("BOOKING", "GREEN"),
+    ]
+    seating = models.JSONField(null=True, blank=True)
+    color = models.CharField(default='NONE',choices=STATUS,max_length=10,null=True,blank=True)
+    is_approved = models.BooleanField(default=False)

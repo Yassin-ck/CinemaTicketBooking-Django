@@ -21,11 +21,19 @@ from .serializers import (
     RequestedLocationSerializer,
     LocationSerializer,
     TheatrOwnerFormSerializer,
+    ScreenDetailsSerailizer,
+    ScreenDetailSeatArrangementSerailizer
 )
 from authentications.models import (
     RequestLocation,
 )
-from .models import TheareOwnerDetails, TheatreDetails, Location
+from authentications.models import Location
+from .models import (
+    TheareOwnerDetails, 
+    TheatreDetails,
+    ScreenDetails,
+    ScreenSeatArrangement
+    )
 
 
 # Create your views here.
@@ -84,16 +92,18 @@ class TheatreOwnerVerification(APIView):
         return Response({"msg": "error"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 @permission_classes([IsAuthenticated])
 class TheatreRegistration(APIView):
     def post(self, request):
         serializer = TheatreRegistrationSerializer(data=request.data)
         if serializer.is_valid():
+            print(serializer.data)
             theatre = TheatreDetails.objects.create(
                 owner=TheareOwnerDetails.objects.get(
-                    Q(user=request.user) & Q(is_approved=False)
+                    Q(user=request.user) & Q(is_approved=True)
                 ),
-                theatre_name=serializer.validated_data.get("theatre_name"),
+                 theatre_name=serializer.validated_data.get("theatre_name"),
                 email=serializer.validated_data.get("email"),
                 phone=serializer.validated_data.get("phone"),
                 alternative_contact=serializer.validated_data.get(
@@ -135,13 +145,14 @@ class TheatreLoginRequest(APIView):
 @permission_classes([IsAuthenticated])
 class TheatreLoginVerify(APIView):
     def post(self, request):
+        print(request.data)
         otp = request.data.get("otp")
-        otp_enterd = request.data.get("otp")
-        if otp == otp_enterd:
+        otp_entered = request.data.get("otp_entered")
+        if otp == otp_entered:
             email = request.data.get("email")
             try:
                 theatre = TheatreDetails.objects.get(
-                    Q(email=email) & Q(is_verified=True)
+                    Q(email=email) & Q(is_approved=True)
                 )
                 token = views.get_tokens_for_user(theatre.owner.user, email)
                 return Response(
@@ -204,3 +215,67 @@ class TheatreDetailsView(APIView):
             theatre = TheatreDetails.objects.filter(owner__user=request.user)
             serializer = TheatreRegistrationSerializer(theatre, many=True)
             return Response({"theatre": serializer.data})
+
+
+@authentication_classes([TheatreAuthentication])
+class ScreenDetailsForm(APIView):
+    def get(self,request,pk=None):
+        if not pk:
+            screen_details = ScreenDetails.objects.filter(theatre__email=request.auth)
+            serializer = ScreenDetailsSerailizer(screen_details,many=True)
+        else:
+            screen_details = ScreenDetails.objects.get(Q(id=pk) & Q(theatre__email=request.auth))
+            serializer = ScreenDetailsSerailizer(screen_details)   
+        return Response({'screens':serializer.data},status=status.HTTP_200_OK)
+
+
+    def put(self,request,pk=None):
+        if pk is not None:
+            screen_detail = ScreenDetails.objects.get(Q(id=pk) & Q(theatre__email=request.auth))
+            serializer = ScreenDetailsSerailizer(screen_detail,data=request.data,partial=True)   
+            if serializer.is_valid():
+                serializer.save() 
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+     
+     
+     
+@authentication_classes([TheatreAuthentication])
+class ScreenSeatArrangementDetails(APIView):
+    def get(self,request,pk=None):
+        if  pk:
+            seat_arrange = ScreenSeatArrangement.objects.filter(Q(screen_id=pk) & Q(screen__theatre__email=request.auth)).select_related('screen').first()
+            screen_detail = seat_arrange.screen
+            row_number = screen_detail.row_count
+            column = screen_detail.column_count
+            row_alpha = ['A','B','C','D','E','F','G','H','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+            row = [j for i,j in zip(range(1,row_number+1),row_alpha)]
+            Seating_arrangement = [f"{j} {i}" for i in range(1,column+1) for j in row] 
+            seat_arrange.Seating = Seating_arrangement
+            seat_arrange.save()                                
+            serializer = ScreenDetailSeatArrangementSerailizer(seat_arrange)   
+            return Response({'screens':serializer.data},status=status.HTTP_200_OK)
+    
+    
+    def put(self,request,pk=None):
+        if pk is not None:
+            seat_arrangements = ScreenSeatArrangement.objects.filter(Q(screen_id=pk) & Q(screen__theatre__email=request.auth)).select_related('screen').first()
+            screen_details = seat_arrangements.screen
+            serializer = ScreenDetailSeatArrangementSerailizer(seat_arrangements,data=request.data,partial=True)   
+            if serializer.is_valid():
+                serializer.save() 
+                Number_of_seats = len(serializer.data.get('seating'))
+                print(Number_of_seats)
+                if Number_of_seats == screen_details.number_of_seats:
+                    seat_arrangements.is_approved = True
+                    seat_arrangements.save()
+                    return Response({"msg":"Success","data":serializer.data},status=status.HTTP_200_OK)
+                else:
+                    seat_arrangements.is_approved = False
+                    seat_arrangements.save()
+                    return Response({"msg":"fill all the seats","data":serializer.data},status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+

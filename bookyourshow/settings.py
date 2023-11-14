@@ -183,7 +183,7 @@ INTERNAL_IPS = [
 
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=23),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=23),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,

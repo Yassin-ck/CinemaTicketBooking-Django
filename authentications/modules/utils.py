@@ -26,5 +26,6 @@ def verify_user_code(verification_sid, user_input):
             settings.SERVICE_SID
         ).verification_checks.create(verification_sid=verification_sid, code=user_input)
         return verification_check
-    except:
+    except Exception as e:
+        print(e)
         return

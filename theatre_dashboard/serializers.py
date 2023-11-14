@@ -1,9 +1,10 @@
 from rest_framework import serializers
-from rest_framework.fields import empty
 from .models import (
     TheareOwnerDetails,
     TheatreDetails,
     Location,
+    ScreenDetails,
+    ScreenSeatArrangement
 )
 from authentications.models import (
     RequestLocation,
@@ -11,7 +12,7 @@ from authentications.models import (
 
 
 class TheatrOwnerFormSerializer(serializers.ModelSerializer):
-    id_proof = serializers.ImageField()
+    id_proof = serializers.ImageField(required=False)
 
     class Meta:
         model = TheareOwnerDetails
@@ -48,7 +49,49 @@ class RequestedLocationSerializer(serializers.ModelSerializer):
         exclude = ("current_location", "user")
 
 
+class ScreenDetailsSerailizer(serializers.ModelSerializer):
+    class Meta:
+        model = ScreenDetails
+        fields = (
+            'id',
+            'theatre',
+            'screen_number',
+            'number_of_seats',
+            'row_count',
+            'column_count',
+            )
+  
+    
+    def update(self, instance, validated_data):
+        instance.screen_number = validated_data.get('screen_number',instance.screen_number)
+        instance.number_of_seats = validated_data.get('number_of_seats',instance.number_of_seats)
+        instance.row_count = validated_data.get('row_count',instance.row_count)
+        instance.column_count = validated_data.get('column_count',instance.column_count)
+        instance.save()
+        return instance
+
+
+        
 class TheatreRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
-        exclude = ("owner",)
+        fields = (
+            'theatre_name',
+            'email',
+            'phone',
+            'alternative_contact',
+            'location',
+            'num_of_screens',
+            'certification',
+            )
+
+class ScreenDetailSeatArrangementSerailizer(serializers.ModelSerializer):
+    class Meta:
+        model = ScreenSeatArrangement
+        fields = ('seating','color')
+    
+    
+    def update(self, instance, validated_data):
+        instance.seating = validated_data.get('seating',instance.seating)
+        instance.save()
+        return instance

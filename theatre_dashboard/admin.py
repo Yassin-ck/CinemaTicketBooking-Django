@@ -3,9 +3,11 @@ from .models import (
     TheareOwnerDetails,
     TheatreDetails,
     ScreenDetails,
+    ScreenSeatArrangement
 )
 
 # Register your models here.
 admin.site.register(TheareOwnerDetails)
 admin.site.register(TheatreDetails)
 admin.site.register(ScreenDetails)
+admin.site.register(ScreenSeatArrangement)

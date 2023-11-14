@@ -8,7 +8,6 @@ from django.conf import settings
 from rest_framework.views import APIView
 from django.db.models import Q
 from .pagination import UserProfilePagination
-import math
 from theatre_dashboard.models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -24,6 +23,7 @@ from .serializers import (
 from authentications.models import (
     UserProfile,
     RequestLocation,
+    Location
 )
 
 # Create your views here.
@@ -53,6 +53,7 @@ class LocationRequests(APIView):
         requested_location = RequestLocation.objects.filter(status="PENDING")
         serializer = RequestedLocationSerializer(requested_location, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
     def put(self, request, pk=None):
         if pk:
@@ -153,5 +154,6 @@ class TheatreRequest(APIView):
                 send_email(subject, message, email_from, recipient_list)
                 return Response({"msg": "Rejected"}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
