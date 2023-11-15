@@ -251,7 +251,7 @@ class ScreenSeatArrangementDetails(APIView):
                 column = screen_detail.column_count
                 row_alpha = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
                 row = [j for i,j in zip(range(1,row_number+1),row_alpha)]
-                Seating_arrangement = [f"{j} {i}" for i in range(1,column+1) for j in row] 
+                Seating_arrangement = [f"{j}{i}" for i in range(1,column+1) for j in row] 
                 sorted_seating = sorted(Seating_arrangement,key=lambda x:(x[0]))
                 seat_arrange.seating = sorted_seating
                 seat_arrange.save()                                
@@ -272,16 +272,9 @@ class ScreenSeatArrangementDetails(APIView):
                 Number_of_seats = len(serializer.data.get('seating'))
                 seat_arrangements.is_approved = Number_of_seats == screen_details.number_of_seats
                 seat_arrangements.save()
-
                 return Response({"msg": "Update successful", "data": serializer.data, "is_approved": seat_arrangements.is_approved}, status=status.HTTP_200_OK)
-                
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
-
-
-
-class ScreenMovieDetailsUpdatingView(APIView):
-    def get(self,request):
-        pass
+# class 
 

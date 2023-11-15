@@ -1,5 +1,7 @@
 from django.urls import path
-from . import views
+from .views import (
+    MovieOrTheatreSearching
+)
 urlpatterns = [
-    # path('',)
+    path('search/',MovieOrTheatreSearching.as_view(),name='moviesearching')
 ]
