@@ -10,6 +10,11 @@ from theatre_dashboard.models import (
     TheatreDetails,
 )
 
+from .models import (
+    MoviesDetails,
+    Languages
+)
+
 
 class UserProfileViewSerializer(GeoFeatureModelSerializer):
     user = MyUserSerializer()
@@ -86,3 +91,54 @@ class TheatreDetailsSerializer(serializers.ModelSerializer):
         instance.is_approved = validated_data.get("is_approved", instance.is_approved)
         instance.save()
         return instance
+
+
+
+
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Languages
+        fields = ('name',)
+
+
+class MovieDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MoviesDetails
+        fields = (
+            'id',
+            'movie_name',
+            'poster'
+        )
+        
+
+class MovieDetailsSingleSerializer(serializers.ModelSerializer):
+    languages = LanguageSerializer(many=True)
+    class Meta:
+        model = MoviesDetails
+        fields = (
+            'movie_name',
+            'languages',
+            'poster',
+            'director'
+        )
+        
+        
+    def update(self, instance, validated_data):
+        instance.movie_name = validated_data.get('movie_name', instance.movie_name)
+        instance.poster = validated_data.get('poster', instance.poster)
+        instance.director = validated_data.get('director', instance.director)
+        
+        language_data = validated_data.get('languages', [])
+        instance.languages.clear()
+        for language_data_item in language_data:
+            language, created = Languages.objects.get_or_create(name=language_data_item['name'])
+            instance.languages.add(language)
+
+        instance.save()
+
+        return instance
+
+
+
+
+

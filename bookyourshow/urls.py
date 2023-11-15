@@ -25,6 +25,7 @@ urlpatterns = [
     path("", include("authentications.urls")),
     path("admin_panel/", include("admin_dashboard.urls")),
     path("theatre/", include("theatre_dashboard.urls")),
+    path("theatre/", include("user_dashboard.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += (path("__debug__/", include("debug_toolbar.urls")),)

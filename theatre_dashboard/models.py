@@ -1,6 +1,6 @@
 from django.contrib.gis.db import models
 from authentications.models import MyUser, Location
-
+from admin_dashboard.models import MoviesDetails
 # Create your models here.
 
 
@@ -28,7 +28,6 @@ class TheatreDetails(models.Model):
     )
     theatre_name = models.CharField(max_length=255)
     email = models.EmailField(max_length=100, unique=True)
-    # movies = models.ForeignKey('MovieDetails',on_delete=models.PROTECT)
     phone = models.CharField(max_length=13, unique=True)
     alternative_contact = models.CharField(
         max_length=13, unique=True, null=True, blank=True
@@ -39,12 +38,16 @@ class TheatreDetails(models.Model):
     is_approved = models.BooleanField(default=False)
 
 
+
+
 class ScreenDetails(models.Model):
     theatre = models.ForeignKey(TheatreDetails, on_delete=models.CASCADE,related_name='screen_details')
+    movies = models.ForeignKey(MoviesDetails,on_delete=models.PROTECT,null=True,blank=True)
     screen_number = models.IntegerField(null=True, blank=True)
     number_of_seats = models.IntegerField(null=True, blank=True)
     row_count = models.IntegerField(null=True, blank=True)
     column_count = models.IntegerField(null=True, blank=True)
+    
     
 class ScreenSeatArrangement(models.Model):
     screen = models.OneToOneField(ScreenDetails,primary_key=True,on_delete=models.CASCADE)
@@ -56,3 +59,5 @@ class ScreenSeatArrangement(models.Model):
     seating = models.JSONField(null=True, blank=True)
     color = models.CharField(default='NONE',choices=STATUS,max_length=10,null=True,blank=True)
     is_approved = models.BooleanField(default=False)
+
+
