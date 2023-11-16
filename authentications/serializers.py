@@ -82,24 +82,18 @@ class UserProfileViewSerializer(serializers.ModelSerializer):
             instance.user.username = validated_user_data.get(
                 "username", instance.user.username
             )
+            instance.user.save()
         instance.save()
-        instance.user.save()
-        print(instance.user.username)
-        print(instance)
         return instance
 
 
 class UserEmailSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('email',) 
-        
-        
-        
+        fields = ("email",)
+
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('phone',)
-        
-  
+        fields = ("phone",)

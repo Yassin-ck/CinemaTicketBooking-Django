@@ -28,7 +28,7 @@ class UserProfiileAdmin(OSMGeoAdmin):
 
 @admin.register(Location)
 class LocationAdmin(OSMGeoAdmin):
-    list_display = ('id',"coordinates", "country", "state", "district", "place")
+    list_display = ("id", "coordinates", "country", "state", "district", "place")
 
 
 @admin.register(RequestLocation)

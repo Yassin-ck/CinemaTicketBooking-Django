@@ -4,7 +4,7 @@ from .models import (
     TheatreDetails,
     Location,
     ScreenDetails,
-    ScreenSeatArrangement
+    ScreenSeatArrangement,
 )
 from authentications.models import (
     RequestLocation,
@@ -53,54 +53,56 @@ class ScreenDetailsSerailizer(serializers.ModelSerializer):
     class Meta:
         model = ScreenDetails
         fields = (
-            'id',
-            'theatre',
-            'screen_number',
-            'number_of_seats',
-            'row_count',
-            'column_count',
-            )
-  
-    
+            "id",
+            "theatre",
+            "screen_number",
+            "number_of_seats",
+            "row_count",
+            "column_count",
+        )
+
     def update(self, instance, validated_data):
-        instance.screen_number = validated_data.get('screen_number',instance.screen_number)
-        instance.number_of_seats = validated_data.get('number_of_seats',instance.number_of_seats)
-        instance.row_count = validated_data.get('row_count',instance.row_count)
-        instance.column_count = validated_data.get('column_count',instance.column_count)
+        instance.screen_number = validated_data.get(
+            "screen_number", instance.screen_number
+        )
+        instance.number_of_seats = validated_data.get(
+            "number_of_seats", instance.number_of_seats
+        )
+        instance.row_count = validated_data.get("row_count", instance.row_count)
+        instance.column_count = validated_data.get(
+            "column_count", instance.column_count
+        )
         instance.save()
         return instance
 
 
-        
 class TheatreRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
         fields = (
-            'theatre_name',
-            'email',
-            'phone',
-            'alternative_contact',
-            'location',
-            'num_of_screens',
-            'certification',
-            )
+            "theatre_name",
+            "email",
+            "phone",
+            "alternative_contact",
+            "location",
+            "num_of_screens",
+            "certification",
+            "address",
+        )
+
 
 class ScreenDetailSeatArrangementSerailizer(serializers.ModelSerializer):
     class Meta:
         model = ScreenSeatArrangement
-        fields = ('seating','color')
-    
-    
-   
-   
+        fields = ("seating", "color")
+
+
 class ScreenMovieUpdatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScreenDetails
-        fields = ('movies','screen_number')
-        
-    
-    
+        fields = ("movies", "screen_number")
+
     def update(self, instance, validated_data):
-        instance.movies = validated_data.get('movies',instance.movies)
+        instance.movies = validated_data.get("movies", instance.movies)
         instance.save()
         return instance

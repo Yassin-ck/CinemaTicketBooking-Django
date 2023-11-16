@@ -73,21 +73,22 @@ class CurrentLocation(APIView):
                 place=data["city"],
                 coordinates=point,
             )
-        return Response(data['county'], status=status.HTTP_200_OK)
+        return Response(data["county"], status=status.HTTP_200_OK)
 
 
 class EmailAuthAndUpdationView(APIView):
-    def get(self,request):
-        if request.user.is_authenticated :
-            return Response({'email':request.user.email},status=status.HTTP_200_OK)
-        return Response({'msg':'error'},status=status.HTTP_400_BAD_REQUEST)
-        
-        
+    def get(self, request):
+        if request.user.is_authenticated:
+            return Response({"email": request.user.email}, status=status.HTTP_200_OK)
+        return Response({"msg": "error"}, status=status.HTTP_400_BAD_REQUEST)
+
     def post(self, request):
         email = request.data.get("email")
-        if request.user.is_authenticated :
-            if request.data.get('email') == request.user.email:
-                return Response({'msg':"No Changes"},status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_authenticated:
+            if request.data.get("email") == request.user.email:
+                return Response(
+                    {"msg": "No Changes"}, status=status.HTTP_400_BAD_REQUEST
+                )
             else:
                 serializer = UserEmailSerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
@@ -105,7 +106,7 @@ class EmailAuthAndUpdationView(APIView):
 
 
 class EmailVerification(APIView):
-    def post(self, request): 
+    def post(self, request):
         otp = request.data.get("otp")
         email = request.data.get("email")
         otp_entered = request.data.get("otp_entered")
@@ -117,23 +118,22 @@ class EmailVerification(APIView):
             else:
                 user = request.user
                 user.email = email
-                user.save() 
-                return Response({'msg':"Email Updated Succesfully"})                
+                user.save()
+                return Response({"msg": "Email Updated Succesfully"})
         return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-               
-        
+
 
 @permission_classes([IsAuthenticated])
 class UserProfileView(APIView):
     def get(self, request):
-        user = UserProfile.objects.filter(user_id=request.user.id).select_related("user")[0]
+        user = UserProfile.objects.filter(user_id=request.user.id).select_related(
+            "user"
+        )[0]
         serializer = UserProfileViewSerializer(user)
         response_data = {
             "user": serializer.data["user"],
             "userprofile": serializer.data,
-            "phone":serializer.data['phone']
+            "phone": serializer.data["phone"],
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -152,27 +152,28 @@ class UserProfileView(APIView):
         return Response({"msg": "user deleted ..."}, status=status.HTTP_200_OK)
 
 
-
-
 # Updating Mobile Number
 @permission_classes([IsAuthenticated])
 class MobilePhoneUpdate(APIView):
-    
-    def get(self,request):
-        return Response({'phone':request.user.userprofile.phone[3:]},status=status.HTTP_200_OK)
-    
+    def get(self, request):
+        return Response(
+            {"phone": request.user.userprofile.phone[3:]}, status=status.HTTP_200_OK
+        )
+
     def post(self, request):
-        print(request.data,'kokona')
+        print(request.data, "kokona")
         serializer = UserProfilePhoneSerializer(data=request.data)
         if serializer.is_valid():
-            print(serializer.data,'kkona')
-            phone = serializer.validated_data.get('phone')
-            
+            print(serializer.data, "kkona")
+            phone = serializer.validated_data.get("phone")
+
             verification_sid = send_sms(phone)
-            print(verification_sid,'kona')
+            print(verification_sid, "kona")
             if verification_sid is not None:
                 return Response({"sid": verification_sid}, status=status.HTTP_200_OK)
-            return Response({"msg": "Cant send otp!!!"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"msg": "Cant send otp!!!"}, status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -190,10 +191,12 @@ class OtpVerification(APIView):
             user = request.user.userprofile
             user.phone = verification_check.to
             user.save()
-            
-            response_data = {"msg": "Success", }
+
+            response_data = {
+                "msg": "Success",
+            }
             return Response(response_data)
         return Response(
             {"msg": "Something Went Wrong..."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+        )

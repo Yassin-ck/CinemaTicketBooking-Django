@@ -1,3 +1,4 @@
 cinenv
 .env
 media
+__pycache__/

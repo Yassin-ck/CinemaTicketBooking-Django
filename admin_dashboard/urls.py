@@ -1,9 +1,9 @@
 from django.urls import path
 from .views import (
     UserProfileViewBYAdmin,
-    TheatreOwnerRequest, 
+    TheatreOwnerRequest,
     TheatreRequest,
-    MovieDetailsAdding
+    MovieDetailsAdding,
 )
 
 urlpatterns = [
@@ -13,5 +13,9 @@ urlpatterns = [
     path("theatre/", TheatreRequest.as_view(), name="theatres"),
     path("theatre/<int:pk>/", TheatreRequest.as_view(), name="theatre"),
     path("moviedetails/", MovieDetailsAdding.as_view(), name="moviedetails"),
-    path("moviedetails/<int:pk>/", MovieDetailsAdding.as_view(), name="moviedetailssingle"),
+    path(
+        "moviedetails/<int:pk>/",
+        MovieDetailsAdding.as_view(),
+        name="moviedetailssingle",
+    ),
 ]

@@ -22,15 +22,8 @@ from .serializers import (
     MovieDetailsSerializer,
     MovieDetailsSingleSerializer,
 )
-from authentications.models import (
-    UserProfile,
-    RequestLocation,
-    Location    
-)
-from .models import (
-    MoviesDetails,
-    Languages
-)
+from authentications.models import UserProfile, RequestLocation, Location
+from .models import MoviesDetails, Languages
 
 # Create your views here.
 
@@ -59,7 +52,6 @@ class LocationRequests(APIView):
         requested_location = RequestLocation.objects.filter(status="PENDING")
         serializer = RequestedLocationSerializer(requested_location, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
     def put(self, request, pk=None):
         if pk:
@@ -122,7 +114,7 @@ class TheatreRequest(APIView):
     def get(self, request, pk=None):
         if not pk:
             details = TheatreDetails.objects.filter(is_approved=False).only(
-                "id", "theatre_name", "email"
+                "id", "theatre_name", "address"
             )
             serializer = TheatreListSerializer(details, many=True)
         else:
@@ -162,46 +154,54 @@ class TheatreRequest(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 permission_classes([IsAdminUser])
-class MovieDetailsAdding(APIView):
-    def get(self,reqeust,pk=None):
-        if not pk:
-            movies = MoviesDetails.objects.only('movie_name','poster')
-            serializer = MovieDetailsSerializer(movies,many=True)
-        else:
-            movies = MoviesDetails.objects.filter(Q(id=pk) & Q(status='UPCOMING')).prefetch_related('languages').first()
-            serializer = MovieDetailsSingleSerializer(movies)     
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    
 
-    def post(self,request):
+
+class MovieDetailsAdding(APIView):
+    def get(self, reqeust, pk=None):
+        if not pk:
+            movies = MoviesDetails.objects.only("movie_name", "poster")
+            serializer = MovieDetailsSerializer(movies, many=True)
+        else:
+            movies = (
+                MoviesDetails.objects.filter(Q(id=pk) & Q(status="UPCOMING"))
+                .prefetch_related("languages")
+                .first()
+            )
+            serializer = MovieDetailsSingleSerializer(movies)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
         print(request.data)
         serializer = MovieDetailsSingleSerializer(data=request.data)
         if serializer.is_valid():
             print(serializer.data)
             movies = MoviesDetails.objects.create(
-                movie_name = serializer.validated_data.get('movie_name'),
-                poster = serializer.validated_data.get('poster'),
-                director = serializer.validated_data.get('director'),
-                status = "UPCOMING" 
+                movie_name=serializer.validated_data.get("movie_name"),
+                poster=serializer.validated_data.get("poster"),
+                director=serializer.validated_data.get("director"),
+                status="UPCOMING",
             )
-            languages = serializer.validated_data.get('languages',{})
+            languages = serializer.validated_data.get("languages", {})
             for language_data in languages:
-                language, created = Languages.objects.get_or_create(name=language_data['name'])
+                language, created = Languages.objects.get_or_create(
+                    name=language_data["name"]
+                )
                 movies.languages.set(language)
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    
-    def put(self,request,pk=None):
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk=None):
         if pk:
-            movies = MoviesDetails.objects.filter(id=pk).prefetch_related('languages').first()
-            serializer = MovieDetailsSingleSerializer(movies,data=request.data,partial=True)
+            movies = (
+                MoviesDetails.objects.filter(id=pk)
+                .prefetch_related("languages")
+                .first()
+            )
+            serializer = MovieDetailsSingleSerializer(
+                movies, data=request.data, partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors)
-        
-        
-

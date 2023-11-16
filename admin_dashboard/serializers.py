@@ -10,10 +10,7 @@ from theatre_dashboard.models import (
     TheatreDetails,
 )
 
-from .models import (
-    MoviesDetails,
-    Languages
-)
+from .models import MoviesDetails, Languages
 
 
 class UserProfileViewSerializer(GeoFeatureModelSerializer):
@@ -68,7 +65,7 @@ class TheatreOwnerDetailsSerializer(serializers.ModelSerializer):
 class TheatreListSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
-        fields = ("id", "theatre_name", "email")
+        fields = ("id", "theatre_name", "address")
 
 
 class TheatreDetailsSerializer(serializers.ModelSerializer):
@@ -85,6 +82,7 @@ class TheatreDetailsSerializer(serializers.ModelSerializer):
             "num_of_screens",
             "certification",
             "owner",
+            "address",
         )
 
     def update(self, instance, validated_data):
@@ -93,52 +91,38 @@ class TheatreDetailsSerializer(serializers.ModelSerializer):
         return instance
 
 
-
-
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Languages
-        fields = ('name',)
+        fields = ("name",)
 
 
 class MovieDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = MoviesDetails
-        fields = (
-            'id',
-            'movie_name',
-            'poster'
-        )
-        
+        fields = ("id", "movie_name", "poster")
+
 
 class MovieDetailsSingleSerializer(serializers.ModelSerializer):
     languages = LanguageSerializer(many=True)
+
     class Meta:
         model = MoviesDetails
-        fields = (
-            'movie_name',
-            'languages',
-            'poster',
-            'director'
-        )
-        
-        
+        fields = ("movie_name", "languages", "poster", "director")
+
     def update(self, instance, validated_data):
-        instance.movie_name = validated_data.get('movie_name', instance.movie_name)
-        instance.poster = validated_data.get('poster', instance.poster)
-        instance.director = validated_data.get('director', instance.director)
-        
-        language_data = validated_data.get('languages', [])
+        instance.movie_name = validated_data.get("movie_name", instance.movie_name)
+        instance.poster = validated_data.get("poster", instance.poster)
+        instance.director = validated_data.get("director", instance.director)
+
+        language_data = validated_data.get("languages", [])
         instance.languages.clear()
         for language_data_item in language_data:
-            language, created = Languages.objects.get_or_create(name=language_data_item['name'])
+            language, created = Languages.objects.get_or_create(
+                name=language_data_item["name"]
+            )
             instance.languages.add(language)
 
         instance.save()
 
         return instance
-
-
-
-
-

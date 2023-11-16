@@ -8,7 +8,7 @@ from .views import (
     TheatreRegistration,
     TheatreDetailsView,
     ScreenDetailsForm,
-    ScreenSeatArrangementDetails
+    ScreenSeatArrangementDetails,
 )
 
 urlpatterns = [
@@ -18,8 +18,18 @@ urlpatterns = [
     path("loginrequest/", TheatreLoginRequest.as_view(), name="loginrequest"),
     path("loginverify/", TheatreLoginVerify.as_view(), name="loginverify"),
     path("searchlocation/", SearchLocaition.as_view(), name="searchlocation"),
-    path("theatredetailsview/", TheatreDetailsView.as_view(), name="theatredetailsview"),
+    path(
+        "theatredetailsview/", TheatreDetailsView.as_view(), name="theatredetailsview"
+    ),
     path("screendetailsform/", ScreenDetailsForm.as_view(), name="screendetailsform"),
-    path("screendetailsform/<int:pk>/", ScreenDetailsForm.as_view(), name="screendetailsSingleform"),
-    path("screenseatarrange/<int:pk>/", ScreenSeatArrangementDetails.as_view(), name="screenseatarrange"),
+    path(
+        "screendetailsform/<int:pk>/",
+        ScreenDetailsForm.as_view(),
+        name="screendetailsSingleform",
+    ),
+    path(
+        "screenseatarrange/<int:pk>/",
+        ScreenSeatArrangementDetails.as_view(),
+        name="screenseatarrange",
+    ),
 ]

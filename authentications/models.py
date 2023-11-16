@@ -1,4 +1,3 @@
-
 # Create your models here.
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.gis.db import models
@@ -62,6 +61,9 @@ class Location(models.Model):
     def latitude(self):
         return self.coordinates.y
 
+    def __str__(self) -> str:
+        return self.place
+
 
 class RequestLocation(models.Model):
     STATUS = [
@@ -78,12 +80,18 @@ class RequestLocation(models.Model):
     place = models.CharField(max_length=100)
     status = models.CharField(default="PENDING", choices=STATUS, max_length=10)
 
+    def __str__(self) -> str:
+        return f"{self.user.username} location request"
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
         MyUser, on_delete=models.CASCADE, primary_key=True, related_name="userprofile"
     )
     phone = models.CharField(max_length=20, unique=True, null=True)
-    first_name = models.CharField(max_length=30, null=True,blank=True)
-    last_name = models.CharField(max_length=30, null=True,blank=True)
-    address = models.TextField(null=True,blank=True)
+    first_name = models.CharField(max_length=30, null=True, blank=True)
+    last_name = models.CharField(max_length=30, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.user.username} profile"

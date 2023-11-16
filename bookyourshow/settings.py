@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "django.contrib.gis",
     "theatre_dashboard",
-    "user_dashboard"
+    "user_dashboard",
 ]
 
 MIDDLEWARE = [

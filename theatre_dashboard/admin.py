@@ -3,7 +3,8 @@ from .models import (
     TheareOwnerDetails,
     TheatreDetails,
     ScreenDetails,
-    ScreenSeatArrangement
+    ScreenSeatArrangement,
+    Shows,
 )
 
 # Register your models here.
@@ -11,3 +12,4 @@ admin.site.register(TheareOwnerDetails)
 admin.site.register(TheatreDetails)
 admin.site.register(ScreenDetails)
 admin.site.register(ScreenSeatArrangement)
+admin.site.register(Shows)
