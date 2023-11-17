@@ -1,6 +1,9 @@
 from django.contrib.gis.db import models
 from authentications.models import MyUser, Location
-from admin_dashboard.models import MoviesDetails
+from admin_dashboard.models import  (
+    MoviesDetails,
+    Languages
+    )
 
 # Create your models here.
 
@@ -46,28 +49,40 @@ class TheatreDetails(models.Model):
         return self.theatre_name
 
 
-class Shows(models.Model):
-    time = models.CharField(max_length=20)
+class ShowTime(models.Model):
+    time = models.CharField(max_length=100)
 
     def __str__(self) -> str:
-        return self.time
+        return str(self.time)
+
+
+class Shows(models.Model):
+    show_time = models.ManyToManyField(ShowTime, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    movies = models.ForeignKey(
+        MoviesDetails, on_delete=models.PROTECT, null=True, blank=True
+    )
+    language = models.ForeignKey(Languages,on_delete=models.DO_NOTHING)
+    screen = models.ForeignKey(
+        "ScreenDetails", on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    def __str__(self) -> str:
+        return f"{self.start_date}-{self.end_date}"
 
 
 class ScreenDetails(models.Model):
     theatre = models.ForeignKey(
         TheatreDetails, on_delete=models.CASCADE, related_name="screen_details"
     )
-    movies = models.ForeignKey(
-        MoviesDetails, on_delete=models.PROTECT, null=True, blank=True
-    )
     screen_number = models.IntegerField(null=True, blank=True)
     number_of_seats = models.IntegerField(null=True, blank=True)
     row_count = models.IntegerField(null=True, blank=True)
     column_count = models.IntegerField(null=True, blank=True)
-    shows = models.ManyToManyField(Shows, blank=True)
 
     def __str__(self) -> str:
-        return str(self.screen_number)
+        return f"{self.theatre.theatre_name}'s screen number {self.screen_number}"
 
 
 class ScreenSeatArrangement(models.Model):
@@ -80,9 +95,6 @@ class ScreenSeatArrangement(models.Model):
         ("BOOKING", "GREEN"),
     ]
     seating = models.JSONField(null=True, blank=True)
-    color = models.CharField(
-        default="NONE", choices=STATUS, max_length=10, null=True, blank=True
-    )
     is_approved = models.BooleanField(default=False)
 
     def __str__(self) -> str:

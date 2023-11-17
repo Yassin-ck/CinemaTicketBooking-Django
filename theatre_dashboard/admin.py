@@ -5,6 +5,7 @@ from .models import (
     ScreenDetails,
     ScreenSeatArrangement,
     Shows,
+    ShowTime,
 )
 
 # Register your models here.
@@ -13,3 +14,4 @@ admin.site.register(TheatreDetails)
 admin.site.register(ScreenDetails)
 admin.site.register(ScreenSeatArrangement)
 admin.site.register(Shows)
+admin.site.register(ShowTime)

@@ -1,11 +1,14 @@
 from rest_framework import serializers
-from rest_framework.fields import empty
-from admin_dashboard.models import MoviesDetails
+from admin_dashboard.models import (
+    MoviesDetails,
+    Languages,
+)
 from theatre_dashboard.models import (
     TheatreDetails,
     ScreenDetails,
     Shows,
     ScreenSeatArrangement,
+    ShowTime,
 )
 
 
@@ -21,25 +24,41 @@ class TheatreViewByLocationSerializer(serializers.ModelSerializer):
         fields = ("theatre_name", "address")
 
 
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Languages
+        fields = ('name',)
+
+
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = MoviesDetails
         fields = ("movie_name",)
 
 
-class ShowsSerializer(serializers.ModelSerializer):
+class ShowTImeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Shows
+        model = ShowTime
         fields = ("time",)
 
 
-class ScreenDetailsSerializer(serializers.ModelSerializer):
+class ShowsSerializer(serializers.ModelSerializer):
+    language = LanguageSerializer()
     movies = MovieSerializer()
-    shows = ShowsSerializer(many=True)
+    show_time = ShowTImeSerializer(many=True)
+
+    class Meta:
+        model = Shows
+        fields = ("show_time", "movies","language")
+
+
+class ScreenDetailsSerializer(serializers.ModelSerializer):
+    shows_set = ShowsSerializer(many=True)
+    theatre = TheatreViewByLocationSerializer()
 
     class Meta:
         model = ScreenDetails
-        fields = ("movies", "shows")
+        fields = ("screen_number", "shows_set", "theatre")
 
 
 class ScreenSeatingSerializer(serializers.ModelSerializer):

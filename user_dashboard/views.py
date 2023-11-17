@@ -42,26 +42,26 @@ class MovieSelectionView(APIView):
         movie = request.GET.get("movie")
         cinemas = request.GET.get("cinemas")
         screen = request.GET.get("screen")
-        Q_Base = ~Q(status="RELAESED") & (Q(screendetails__theatre__location__place=location) | Q(screendetails__theatre__location__district=location))
+        Q_Base = ~Q(status="RELAESED") & ( Q(shows__screen__theatre__location__place=location) | Q(shows__screen__theatre__location__district=location))
         q_query = Q()
         if q:
-            q_query = Q(languages__name=q)
+            q_query = Q(shows__language__name=q)
             Q_Base &= q_query
             if movie and cinemas and screen:
-                response = self.get_screen_details(location, cinemas, screen)
+                response = self.get_screen_details(location, cinemas, screen,q,movie)
                 return Response(response, status=status.HTTP_200_OK)
             elif movie:
-                Q_Base = ( Q(movies__movie_name=movie) & ( Q(theatre__location__place=location) | Q(theatre__location__district=location) ) & Q(movies__languages__name=q) )
-                theatres = ScreenDetails.objects.filter(Q_Base).only("screen_number", "shows", "theatre", "movies").select_related("theatre", "movies").prefetch_related("shows")
+                Q_Base = Q(shows__movies__movie_name=movie) & ( Q(theatre__location__place=location)| Q(theatre__location__district=location)) & Q(shows__language__name=q)
+                theatres = ScreenDetails.objects.filter(Q_Base).only("screen_number", "theatre").select_related("theatre").prefetch_related("shows_set", "shows_set__movies", "shows_set__show_time","shows_set__language")
                 serializer = ScreenDetailsSerializer(theatres, many=True)
                 return Response({"movies": serializer.data}, status=status.HTTP_200_OK)
         movies = MoviesDetails.objects.filter(Q_Base).distinct()
         serializer = MovieDetailsViewSerializer(movies, many=True)
         return Response({"movies": serializer.data}, status=status.HTTP_200_OK)
 
-    def get_screen_details(self, location, cinemas, screen):
-        Q_Base =  Q(screen__theatre__theatre_name=cinemas) & ( Q(screen__theatre__location__place=location) | Q(screen__theatre__location__district=location)) & Q(screen__screen_number=screen)
-        screen_details = ScreenSeatArrangement.objects.filter(Q_Base).only("seating").select_related("screen", "screen__movies").first()
+    def get_screen_details(self, location, cinemas, screen,q,movie):
+        Q_Base = Q(screen__theatre__theatre_name=cinemas)& ( Q(screen__theatre__location__place=location)| Q(screen__theatre__location__district=location))& Q(screen__screen_number=screen)& Q(screen__shows__language__name=q)& Q(screen__shows__movies__movie_name=movie)
+        screen_details = ScreenSeatArrangement.objects.filter(Q_Base).select_related("screen", "screen__theatre").prefetch_related("screen__shows_set","screen__shows_set__movies","screen__shows_set__show_time","screen__shows_set__language").first()
         serializer = ScreenSeatingSerializer(screen_details)
         return {"screen_details": serializer.data}
 
@@ -72,19 +72,20 @@ class TheatreSelectionView(APIView):
         location = request.GET.get("search")
         cinemas = request.GET.get("cinemas")
         screen = request.GET.get("screen")
-        if not cinemas and screen:
-            theatres = TheatreDetails.objects.filter( Q(location__place=location) | Q(location__district=location)).only("theatre_name", "address")
+        if not cinemas and not screen:
+            theatres = TheatreDetails.objects.filter(Q(location__place=location) | Q(location__district=location)).only("theatre_name", "address")
             serializer = TheatreViewByLocationSerializer(theatres, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         if not screen:
-            Q_Base = Q(theatre__theatre_name=cinemas) & (Q(theatre__location__place=location) | Q(theatre__location__district=location))
-            screens = ScreenDetails.objects.filter(Q_Base).only("movies", "shows").select_related("movies").prefetch_related("shows")
+            Q_Base = Q(theatre__theatre_name=cinemas) & ( Q(theatre__location__place=location) | Q(theatre__location__district=location))
+            screens = ScreenDetails.objects.filter(Q_Base).select_related("theatre").prefetch_related("shows_set","shows_set__movies","shows_set__language","shows_set__show_time")
             serializer = ScreenDetailsSerializer(screens, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        Q_Base = Q(screen__theatre__theatre_name=cinemas) & ( Q(screen__theatre__location__place=location) | Q(screen__theatre__location__district=location)) & Q(screen__screen_number=screen)
-        screen_detials = ScreenSeatArrangement.objects.filter(Q_Base).only("seating").select_related("screen", "screen__movies").first()
-        serializer = ScreenSeatingSerializer(screen_detials)
+        Q_Base = Q(screen__theatre__theatre_name=cinemas) & (Q(screen__theatre__location__place=location)| Q(screen__theatre__location__district=location))& Q(screen__screen_number=screen)
+        screen_details = ScreenSeatArrangement.objects.filter(Q_Base).select_related("screen", "screen__theatre").prefetch_related("screen__shows_set","screen__shows_set__movies","screen__shows_set__show_time","screen__shows_set__language") .first()
+        serializer = ScreenSeatingSerializer(screen_details)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
+ 

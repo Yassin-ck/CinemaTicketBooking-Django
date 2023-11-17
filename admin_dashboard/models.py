@@ -15,7 +15,6 @@ class MoviesDetails(models.Model):
         ("RELEASED", "RELAESED"),
     ]
     movie_name = models.CharField(max_length=200)
-    languages = models.ManyToManyField(Languages, related_name="movie_language")
     director = models.CharField(max_length=100)
     poster = models.ImageField(upload_to="movie_posters/", null=True, blank=True)
     status = models.CharField(default="UPCOMING", choices=STATUS, max_length=20)
@@ -25,4 +24,4 @@ class MoviesDetails(models.Model):
         unique_together = ("movie_name", "director")
 
     def __str__(self) -> str:
-        return self.movie_name
+        return f"{self.movie_name}"

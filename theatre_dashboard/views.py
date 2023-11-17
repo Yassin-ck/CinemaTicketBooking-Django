@@ -22,7 +22,6 @@ from .serializers import (
     TheatrOwnerFormSerializer,
     ScreenDetailsSerailizer,
     ScreenDetailSeatArrangementSerailizer,
-    ScreenMovieUpdatingSerializer,
 )
 from authentications.models import (
     RequestLocation,

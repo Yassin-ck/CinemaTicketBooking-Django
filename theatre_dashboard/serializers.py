@@ -97,12 +97,12 @@ class ScreenDetailSeatArrangementSerailizer(serializers.ModelSerializer):
         fields = ("seating", "color")
 
 
-class ScreenMovieUpdatingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ScreenDetails
-        fields = ("movies", "screen_number")
+# class ScreenMovieUpdatingSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ScreenDetails
+#         fields = ("movies", "screen_number")
 
-    def update(self, instance, validated_data):
-        instance.movies = validated_data.get("movies", instance.movies)
-        instance.save()
-        return instance
+#     def update(self, instance, validated_data):
+#         instance.movies = validated_data.get("movies", instance.movies)
+#         instance.save()
+#         return instance
