@@ -55,11 +55,17 @@ class ShowTime(models.Model):
     def __str__(self) -> str:
         return str(self.time)
 
-
+class ShowDates(models.Model):
+    dates = models.DateField()
+    
+    def __str__(self) -> str:
+        return f"{self.dates}"
+    
+    
+    
 class Shows(models.Model):
-    show_time = models.ManyToManyField(ShowTime, blank=True)
-    start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
+    show_time = models.ManyToManyField(ShowTime, blank=True,related_name="showtime")
+    show_dates = models.ManyToManyField(ShowDates, blank=True,related_name='showdate')
     movies = models.ForeignKey(
         MoviesDetails, on_delete=models.PROTECT, null=True, blank=True
     )
@@ -69,7 +75,7 @@ class Shows(models.Model):
     )
 
     def __str__(self) -> str:
-        return f"{self.start_date}-{self.end_date}"
+        return  f"{self.id}"
 
 
 class ScreenDetails(models.Model):

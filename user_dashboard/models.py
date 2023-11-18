@@ -6,9 +6,14 @@ from theatre_dashboard.models import (
 )
 
 
+# class Payments(models.Model):
+#     pass
+
 class TicketBooking(models.Model):
     user = models.ForeignKey(MyUser, on_delete=models.CASCADE, null=True, blank=True)
     show = models.ForeignKey(Shows, on_delete=models.SET_NULL, null=True)
-    number_of_tickets = models.CharField(max_length=2)
+    tickets = models.JSONField()
     theatre_screen = models.ForeignKey(ScreenDetails, on_delete=models.CASCADE)
     booking_date = models.DateTimeField(auto_now_add=True)
+    
+    
