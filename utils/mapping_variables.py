@@ -1,3 +1,5 @@
+from datetime import datetime,timedelta
+
 row_alpha = [
                     "A",
                     "B",
@@ -26,3 +28,8 @@ row_alpha = [
                     "Y",
                     "Z",
                 ] 
+
+
+
+today = datetime.today().date()
+to_third_day = today + timedelta(days=3)
