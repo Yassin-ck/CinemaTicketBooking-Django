@@ -13,12 +13,11 @@ from theatre_dashboard.models import (
 from .models import MoviesDetails, Languages
 
 
-class UserProfileViewSerializer(GeoFeatureModelSerializer):
+class UserProfileViewSerializer(serializers.ModelSerializer):
     user = MyUserSerializer()
 
     class Meta:
         model = UserProfile
-        geo_field = "location"
         fields = ("user_id", "first_name", "last_name", "user", "phone")
 
 

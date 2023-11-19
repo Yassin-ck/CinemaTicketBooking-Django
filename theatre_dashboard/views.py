@@ -12,6 +12,7 @@ from rest_framework.decorators import permission_classes
 from .theatre_auth import TheatreAuthentication
 from rest_framework.decorators import authentication_classes
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from utils.mapping_variables import row_alpha
 from authentications.models import (
     MyUser,
 )
@@ -252,35 +253,7 @@ class ScreenSeatArrangementDetails(APIView):
             if not seat_arrange.seating:
                 screen_detail = seat_arrange.screen
                 row_number = screen_detail.row_count
-                column = screen_detail.column_count
-                row_alpha = [
-                    "A",
-                    "B",
-                    "C",
-                    "D",
-                    "E",
-                    "F",
-                    "G",
-                    "H",
-                    "I",
-                    "J",
-                    "K",
-                    "L",
-                    "M",
-                    "N",
-                    "O",
-                    "P",
-                    "Q",
-                    "R",
-                    "S",
-                    "T",
-                    "U",
-                    "V",
-                    "W",
-                    "X",
-                    "Y",
-                    "Z",
-                ]
+                column = screen_detail.column_count       
                 row = [j for i, j in zip(range(1, row_number + 1), row_alpha)]
                 Seating_arrangement = [
                     f"{j}{i}" for i in range(1, column + 1) for j in row

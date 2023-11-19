@@ -45,6 +45,7 @@ class TheatreDetails(models.Model):
     certification = models.ImageField(upload_to="TheatreCertification/")
     is_approved = models.BooleanField(default=False)
 
+
     def __str__(self) -> str:
         return self.theatre_name
 
@@ -76,6 +77,10 @@ class Shows(models.Model):
 
     def __str__(self) -> str:
         return  f"{self.id}"
+    
+    # @property
+    # def same_screen(self):
+    #     return  self.show_dates.dates and self.show_time.time and self.movies.movie_name and self.language.name
 
 
 class ScreenDetails(models.Model):

@@ -39,8 +39,9 @@ class UserProfileViewBYAdmin(APIView):
         serializer = UserProfileViewSerializer(
             result_page, many=True, context={"request": request}
         )
+        print(serializer.data)
         response_data = {
-            "user": serializer.data["features"],
+            "user": serializer.data,
             "page_number": number_of_page,
         }
         return Response(response_data, status=status.HTTP_200_OK)

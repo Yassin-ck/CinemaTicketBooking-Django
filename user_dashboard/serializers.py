@@ -63,13 +63,7 @@ class ShowsSerializer(serializers.ModelSerializer):
         model = Shows
         fields = ("show_time", "movies","language","show_dates")
         
-        
-    # def to_representation(self, instance):
-    #     filtered_dates = [date for date in instance.show_dates.all() if date.dates <= datetime.today().date() +timedelta(days=3)]
-    #     instance.show_dates.set(filtered_dates)  
-    #     return super().to_representation(instance)
-        
-    
+
 
 class ScreenDetailsSerializer(serializers.ModelSerializer):
     shows_set = ShowsSerializer(many=True)

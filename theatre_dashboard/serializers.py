@@ -49,7 +49,10 @@ class RequestedLocationSerializer(serializers.ModelSerializer):
         exclude = ("current_location", "user")
 
 
+
+
 class ScreenDetailsSerailizer(serializers.ModelSerializer):
+    
     class Meta:
         model = ScreenDetails
         fields = (
@@ -76,6 +79,12 @@ class ScreenDetailsSerailizer(serializers.ModelSerializer):
         return instance
 
 
+
+
+
+
+
+
 class TheatreRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
@@ -94,7 +103,7 @@ class TheatreRegistrationSerializer(serializers.ModelSerializer):
 class ScreenDetailSeatArrangementSerailizer(serializers.ModelSerializer):
     class Meta:
         model = ScreenSeatArrangement
-        fields = ("seating", "color")
+        fields = ("seating",)
 
 
 # class ScreenMovieUpdatingSerializer(serializers.ModelSerializer):
