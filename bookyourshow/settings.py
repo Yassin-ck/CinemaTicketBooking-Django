@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
     "corsheaders",
     "debug_toolbar",
     "authentications",
@@ -231,3 +232,18 @@ EMAIL_USE_TLS = True
 # ip auth
 
 IP_AUTH = os.getenv("IP_AUTH")
+
+
+#swagger
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'basic': {
+            'type': 'basic'
+        }
+    },
+}
+
+REDOC_SETTINGS = {
+   'LAZY_RENDERING': False,
+   
+}

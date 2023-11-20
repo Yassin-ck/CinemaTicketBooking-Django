@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .modules import google
 from rest_framework.exceptions import AuthenticationFailed
 from django.conf import settings
@@ -8,6 +7,8 @@ from authentications.modules.register import register_social_user
 from .models import (
     MyUser,
     UserProfile,
+    Location,
+    RequestLocation
 )
 
 
@@ -53,23 +54,25 @@ class GoogleSocialAuthSerializer(serializers.Serializer):
         )
 
 
-class MyUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MyUser
-        fields = ("id", "username", "email")
-
-
-class UserDetailsSerilaizer(serializers.Serializer):
-    username = serializers.CharField(required=False)
+class UserDetailsChoiceSerilaizer(serializers.Serializer):
     email = serializers.EmailField(required=False)
+    username = serializers.CharField(required=False)
+    
 
 
-class UserProfileViewSerializer(serializers.ModelSerializer):
-    user = UserDetailsSerilaizer()
+class UserProfileListSerializer(serializers.ModelSerializer):
+    user = UserDetailsChoiceSerilaizer()
 
     class Meta:
         model = UserProfile
-        fields = ("user_id", "first_name", "last_name", "address", "phone", "user")
+        fields = (
+            "user_id",
+            "first_name",
+            "last_name",
+            "address",
+            "phone",
+            "user"
+            )
 
     def update(self, instance, validated_data):
         instance.first_name = validated_data.get("first_name", instance.first_name)
@@ -77,7 +80,6 @@ class UserProfileViewSerializer(serializers.ModelSerializer):
         instance.address = validated_data.get("address", instance.address)
 
         validated_user_data = validated_data.pop("user", None)
-        print(validated_user_data)
         if validated_user_data:
             instance.user.username = validated_user_data.get(
                 "username", instance.user.username
@@ -97,3 +99,39 @@ class UserProfilePhoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ("phone",)
+
+
+
+class LocationListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = (
+            "country",
+            "state",
+            "district",
+            "place",
+        )
+
+
+class RequestedLocationListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestLocation
+        fields = (
+            "user",
+            "country",
+            "state",
+            "district",
+            "place",
+        )
+
+
+class RequestedLocationCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestLocation
+        fields = ("status",)
+
+    def update(instance, validated_data):
+        instance.status = validated_data.get("status", instance.status)
+        instance.save()
+        return instance
+

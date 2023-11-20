@@ -5,18 +5,14 @@ from django.db.models import Q , Prefetch
 from admin_dashboard.models import MoviesDetails
 from rest_framework import status
 from datetime import timedelta
+from utils.mapping_variables import RELEASED
 from utils.mapping_variables import to_third_day,today
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
     AllowAny,
 )
-from .serializers import (
-    MovieDetailsViewSerializer,
-    TheatreViewByLocationSerializer,
-    ScreenDetailsSerializer,
-    ScreenSeatingSerializer,
-)
+
 from theatre_dashboard.models import (
     TheatreDetails,
     ScreenDetails,
@@ -24,8 +20,14 @@ from theatre_dashboard.models import (
     Shows,
     ShowDates
 )
-
-
+from admin_dashboard.serializers import (
+    MovieDetailListSerializer,
+)
+from theatre_dashboard.serializers import (
+    TheatreListSerializer,
+    ScreenDetaiChoicesSerializer,
+    ScreenSeatArrangementChoiceSerailizer
+)
 
     
 
@@ -44,7 +46,7 @@ class MovieSearching(APIView):
         if not q:
             pass
         movies = MoviesDetails.objects.filter(Q_base)
-        serializer = MovieDetailsViewSerializer(movies, many=True)
+        serializer = MovieDetailListSerializer(movies, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -58,7 +60,7 @@ class MovieSelectionView(APIView):
         cinemas = request.GET.get("cinemas")
         screen = request.GET.get("screen")
         date = request.GET.get('dt')
-        Q_Base = ~Q(status="RELAESED") & ( Q(shows__screen__theatre__location__place=location) | Q(shows__screen__theatre__location__district=location))
+        Q_Base = ~Q(status=RELEASED) & ( Q(shows__screen__theatre__location__place=location) | Q(shows__screen__theatre__location__district=location))
         q_query = Q()
         if q:
             q_query = Q(shows__language__name=q)
@@ -88,10 +90,10 @@ class MovieSelectionView(APIView):
                 Prefetch("shows_set",Shows.objects.select_related("movies", "language")
                 .prefetch_related("show_time", Prefetch("show_dates",ShowDates.objects.filter(dates__range=(today,to_third_day)))))
                ).distinct()
-                serializer = ScreenDetailsSerializer(theatres, many=True)
+                serializer = ScreenDetaiChoicesSerializer(theatres, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
         movies = MoviesDetails.objects.filter(Q_Base).distinct()
-        serializer = MovieDetailsViewSerializer(movies, many=True)
+        serializer = MovieDetailListSerializer(movies, many=True)
         return Response({"movies": serializer.data}, status=status.HTTP_200_OK)
 
     def get_screen_details(self, location, cinemas, screen,q,movie,date=None):
@@ -111,7 +113,7 @@ class MovieSelectionView(APIView):
             screen_details = screen_seat_details(Q_Base,ShowDates.objects.filter(dates__range=(today,to_third_day)))            
         if screen_details is None:
             return {"data": "No data"}    
-        serializer = ScreenSeatingSerializer(screen_details)
+        serializer = ScreenSeatArrangementChoiceSerailizer(screen_details)
         return {"screen_details": serializer.data}
 
 
@@ -125,14 +127,14 @@ class TheatreSelectionView(APIView):
         date = request.GET.get("dt")
         if not cinemas and not screen:
             theatres = TheatreDetails.objects.filter(Q(location__place=location) | Q(location__district=location)).only("theatre_name", "address")
-            serializer = TheatreViewByLocationSerializer(theatres, many=True)
+            serializer = TheatreListSerializer(theatres, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         if not screen:
             Q_Base = Q(theatre__theatre_name=cinemas) & ( Q(theatre__location__place=location) | Q(theatre__location__district=location))
             screens = ScreenDetails.objects.filter(Q_Base).select_related("theatre").prefetch_related(
             Prefetch("shows_set",Shows.objects.select_related("movies","language")
             .prefetch_related("show_time",Prefetch("show_dates",ShowDates.objects.filter(dates__range=(today,to_third_day))))))
-            serializer = ScreenDetailsSerializer(screens, many=True)
+            serializer = ScreenDetaiChoicesSerializer(screens, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         Q_Base = Q(screen__theatre__theatre_name=cinemas) & (Q(screen__theatre__location__place=location)| Q(screen__theatre__location__district=location))& Q(screen__screen_number=screen)
         if date:        
@@ -142,7 +144,7 @@ class TheatreSelectionView(APIView):
             screen_details = screen_seat_details(Q_Base,ShowDates.objects.filter(dates=date))
         else:
             screen_details = screen_seat_details(Q_Base,ShowDates.objects.filter(dates__range=(today,to_third_day)))
-        serializer = ScreenSeatingSerializer(screen_details)
+        serializer = ScreenSeatArrangementChoiceSerailizer(screen_details)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     

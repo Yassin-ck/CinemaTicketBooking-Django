@@ -23,7 +23,7 @@ from .serializers import (
     UserProfilePhoneSerializer,
     UserEmailSerializer,
     MyTokenSerializer,
-    UserProfileViewSerializer,
+    UserProfileListSerializer,
     GoogleSocialAuthSerializer,
 )
 
@@ -129,20 +129,17 @@ class UserProfileView(APIView):
         user = UserProfile.objects.filter(user_id=request.user.id).select_related(
             "user"
         )[0]
-        serializer = UserProfileViewSerializer(user)
-        response_data = {
-            "user": serializer.data["user"],
-            "userprofile": serializer.data,
-            "phone": serializer.data["phone"],
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+        serializer = UserProfileListSerializer(user)
+        print(serializer.data)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
         user = UserProfile.objects.get(user_id=request.user.id)
-        serializer = UserProfileViewSerializer(user, data=request.data, partial=True)
+        serializer = UserProfileListSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            print(serializer.data)
+            # print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

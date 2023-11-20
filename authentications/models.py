@@ -72,7 +72,6 @@ class RequestLocation(models.Model):
         ("REJECTED", "REJECTED"),
     ]
 
-    current_location = models.PointField(srid=4326, null=True, blank=True)
     user = models.ForeignKey(MyUser, on_delete=models.CASCADE)
     country = models.CharField(max_length=100)
     state = models.CharField(max_length=100)

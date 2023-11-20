@@ -78,9 +78,6 @@ class Shows(models.Model):
     def __str__(self) -> str:
         return  f"{self.id}"
     
-    # @property
-    # def same_screen(self):
-    #     return  self.show_dates.dates and self.show_time.time and self.movies.movie_name and self.language.name
 
 
 class ScreenDetails(models.Model):

@@ -12,7 +12,7 @@ class MoviesDetails(models.Model):
     STATUS = [
         ("UPCOMING", "UPCOMING"),
         ("CURRENTLYPLAYING", "CURRENTLY PLAYING"),
-        ("RELEASED", "RELAESED"),
+        ("RELEASED", "RELEASED"),
     ]
     movie_name = models.CharField(max_length=200)
     director = models.CharField(max_length=100)

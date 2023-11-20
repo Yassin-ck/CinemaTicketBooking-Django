@@ -1,10 +1,10 @@
-from django.shortcuts import render
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework import status
 from rest_framework.response import Response
 from authentications.modules.smtp import send_email
 from django.conf import settings
+from utils.mapping_variables import UPCOMING,PENDING
 from rest_framework.views import APIView
 from django.db.models import Q
 from .pagination import UserProfilePagination
@@ -12,20 +12,33 @@ from theatre_dashboard.models import (
     TheareOwnerDetails,
     TheatreDetails,
 )
-from .serializers import (
-    UserProfileViewSerializer,
-    RequestedLocationSerializer,
-    TheatreOwnerDetailsSerializer,
-    TheatreDetailsSerializer,
+from theatre_dashboard.serializers import (
     TheatreOwnerListSerializer,
+    TheatrOwnerCreateUpdateSerializer,
     TheatreListSerializer,
-    MovieDetailsSerializer,
-    MovieDetailsSingleSerializer,
+    TheatreDetailsCreateUpdateSerializer,
+    TheatreListChoiceSerializer
 )
-from authentications.models import UserProfile, RequestLocation, Location
-from .models import MoviesDetails, Languages
+from authentications.serializers import( 
+    UserProfileListSerializer,
+    RequestedLocationListSerializer,
+    RequestedLocationCreateUpdateSerializer,   
+        )
 
-# Create your views here.
+from .serializers import (
+    MovieDetailListSerializer,
+    MovieDetailsCreateUpdateSerializer,
+    MovieDetailsChoiceSerializer
+)
+from authentications.models import (
+    UserProfile,
+    RequestLocation
+    )
+from .models import (
+    MoviesDetails,
+    Languages
+    )
+
 
 
 @permission_classes([IsAdminUser])
@@ -36,7 +49,7 @@ class UserProfileViewBYAdmin(APIView):
         paginator = UserProfilePagination()
         number_of_page = number_of_users // paginator.page_size
         result_page = paginator.paginate_queryset(user_profile, request)
-        serializer = UserProfileViewSerializer(
+        serializer = UserProfileListSerializer(
             result_page, many=True, context={"request": request}
         )
         print(serializer.data)
@@ -50,14 +63,14 @@ class UserProfileViewBYAdmin(APIView):
 @permission_classes([IsAdminUser])
 class LocationRequests(APIView):
     def get(self, request):
-        requested_location = RequestLocation.objects.filter(status="PENDING")
-        serializer = RequestedLocationSerializer(requested_location, many=True)
+        requested_location = RequestLocation.objects.filter(status=PENDING)
+        serializer = RequestedLocationListSerializer(requested_location, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
         if pk:
             location = RequestLocation.objects.get(id=pk)
-            serializer = RequestedLocationSerializer(location)
+            serializer = RequestedLocationCreateUpdateSerializer(location)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -71,7 +84,7 @@ class TheatreOwnerRequest(APIView):
             serializer = TheatreOwnerListSerializer(details, many=True)
         else:
             details = TheareOwnerDetails.objects.get(id=pk)
-            serializer = TheatreOwnerDetailsSerializer(details)
+            serializer = TheatreOwnerListSerializer(details)
         print(serializer.data)
         return Response(
             serializer.data,
@@ -82,7 +95,7 @@ class TheatreOwnerRequest(APIView):
     def put(self, request, pk=None):
         if pk:
             details = TheareOwnerDetails.objects.get(id=pk)
-            serializer = TheatreOwnerDetailsSerializer(
+            serializer = TheatrOwnerCreateUpdateSerializer(
                 details, data=request.data, partial=True
             )
             if serializer.is_valid():
@@ -120,13 +133,13 @@ class TheatreRequest(APIView):
             serializer = TheatreListSerializer(details, many=True)
         else:
             details = TheatreDetails.objects.filter(id=pk).select_related("owner")
-            serializer = TheatreDetailsSerializer(details[0])
+            serializer = TheatreListChoiceSerializer(details[0])
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
         if pk:
             details = TheatreDetails.objects.get(id=pk)
-            serializer = TheatreDetailsSerializer(
+            serializer = TheatreDetailsCreateUpdateSerializer(
                 details, data=request.data, partial=True
             )
             if serializer.is_valid():
@@ -156,32 +169,30 @@ class TheatreRequest(APIView):
 
 
 permission_classes([IsAdminUser])
-
-
 class MovieDetailsAdding(APIView):
     def get(self, reqeust, pk=None):
         if not pk:
             movies = MoviesDetails.objects.only("movie_name", "poster")
-            serializer = MovieDetailsSerializer(movies, many=True)
+            serializer = MovieDetailListSerializer(movies, many=True)
         else:
             movies = (
-                MoviesDetails.objects.filter(Q(id=pk) & Q(status="UPCOMING"))
+                MoviesDetails.objects.filter(Q(id=pk) & Q(status=UPCOMING))
                 .prefetch_related("languages")
                 .first()
             )
-            serializer = MovieDetailsSingleSerializer(movies)
+            serializer = MovieDetailsChoiceSerializer(movies)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         print(request.data)
-        serializer = MovieDetailsSingleSerializer(data=request.data)
+        serializer = MovieDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             print(serializer.data)
             movies = MoviesDetails.objects.create(
                 movie_name=serializer.validated_data.get("movie_name"),
                 poster=serializer.validated_data.get("poster"),
                 director=serializer.validated_data.get("director"),
-                status="UPCOMING",
+                status=UPCOMING,
             )
             languages = serializer.validated_data.get("languages", {})
             for language_data in languages:
@@ -199,7 +210,7 @@ class MovieDetailsAdding(APIView):
                 .prefetch_related("languages")
                 .first()
             )
-            serializer = MovieDetailsSingleSerializer(
+            serializer = MovieDetailsCreateUpdateSerializer(
                 movies, data=request.data, partial=True
             )
             if serializer.is_valid():

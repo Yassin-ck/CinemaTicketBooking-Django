@@ -33,3 +33,7 @@ row_alpha = [
 
 today = datetime.today().date()
 to_third_day = today + timedelta(days=3)
+
+UPCOMING = "UPCOMING"
+PENDING = "PENDING"
+RELEASED = "RELEASED"

@@ -13,21 +13,24 @@ from .theatre_auth import TheatreAuthentication
 from rest_framework.decorators import authentication_classes
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from utils.mapping_variables import row_alpha
-from authentications.models import (
-    MyUser,
+from authentications.serializers import (
+    LocationListSerializer,
+    RequestedLocationListSerializer
 )
 from .serializers import (
-    TheatreRegistrationSerializer,
-    RequestedLocationSerializer,
-    LocationSerializer,
-    TheatrOwnerFormSerializer,
-    ScreenDetailsSerailizer,
-    ScreenDetailSeatArrangementSerailizer,
+    TheatreDetailsCreateUpdateSerializer,
+    TheatrOwnerCreateUpdateSerializer,
+    ScreenDetailsListSerializer,
+    ScreenDetailsCreateUpdateSerailizer,
+    TheatreListSerializer,
+    ScreenSeatArrangementListSerailizer,
+    ScreenSeatArrangementCreateUpdateSerailizer
 )
 from authentications.models import (
+    MyUser,
     RequestLocation,
+    Location
 )
-from authentications.models import Location
 from .models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -36,13 +39,10 @@ from .models import (
 )
 
 
-# Create your views here.
-
-
 @permission_classes([IsAuthenticated])
 class TheatreOwnerFormApplication(APIView):
     def post(self, request):
-        serializer = TheatrOwnerFormSerializer(data=request.data)
+        serializer = TheatrOwnerCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             user = TheareOwnerDetails.objects.create(
                 user=request.user,
@@ -95,7 +95,7 @@ class TheatreOwnerVerification(APIView):
 @permission_classes([IsAuthenticated])
 class TheatreRegistration(APIView):
     def post(self, request):
-        serializer = TheatreRegistrationSerializer(data=request.data)
+        serializer = TheatreDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             print(serializer.data)
             theatre = TheatreDetails.objects.create(
@@ -171,14 +171,14 @@ class SearchLocaition(APIView):
         Q_base = Q(district__icontains=q) | Q(place__icontains=q)
         location_data = Location.objects.filter(Q_base)
         if location_data:
-            serializer = LocationSerializer(location_data, many=True)
+            serializer = LocationListSerializer(location_data, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(
             {"msg": "Location not found..."}, status=status.HTTP_404_NOT_FOUND
         )
 
     def post(self, request):
-        serializer = RequestedLocationSerializer(data=request.data)
+        serializer = RequestedLocationListSerializer(data=request.data)
         if serializer.is_valid():
             try:
                 RequestLocation.objects.create(
@@ -208,7 +208,7 @@ class TheatreDetailsView(APIView):
     def get(self, request):
         if TheareOwnerDetails.objects.filter(user=request.user).exists():
             theatre = TheatreDetails.objects.filter(owner__user=request.user)
-            serializer = TheatreRegistrationSerializer(theatre, many=True)
+            serializer = TheatreListSerializer(theatre, many=True)
             return Response({"theatre": serializer.data})
 
 
@@ -217,12 +217,12 @@ class ScreenDetailsForm(APIView):
     def get(self, request, pk=None):
         if not pk:
             screen_details = ScreenDetails.objects.filter(theatre__email=request.auth)
-            serializer = ScreenDetailsSerailizer(screen_details, many=True)
+            serializer = ScreenDetailsListSerializer(screen_details, many=True)
         else:
             screen_details = ScreenDetails.objects.get(
                 Q(id=pk) & Q(theatre__email=request.auth)
             )
-            serializer = ScreenDetailsSerailizer(screen_details)
+            serializer = ScreenDetailsListSerializer(screen_details)
         return Response({"screens": serializer.data}, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
@@ -230,7 +230,7 @@ class ScreenDetailsForm(APIView):
             screen_detail = ScreenDetails.objects.get(
                 Q(id=pk) & Q(theatre__email=request.auth)
             )
-            serializer = ScreenDetailsSerailizer(
+            serializer = ScreenDetailsCreateUpdateSerailizer(
                 screen_detail, data=request.data, partial=True
             )
             if serializer.is_valid():
@@ -261,7 +261,7 @@ class ScreenSeatArrangementDetails(APIView):
                 sorted_seating = sorted(Seating_arrangement, key=lambda x: (x[0]))
                 seat_arrange.seating = sorted_seating
                 seat_arrange.save()
-            serializer = ScreenDetailSeatArrangementSerailizer(seat_arrange)
+            serializer = ScreenSeatArrangementListSerailizer(seat_arrange)
             return Response({"screens": serializer.data}, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
@@ -274,7 +274,7 @@ class ScreenSeatArrangementDetails(APIView):
                 .first()
             )
             screen_details = seat_arrangements.screen
-            serializer = ScreenDetailSeatArrangementSerailizer(
+            serializer = ScreenSeatArrangementCreateUpdateSerailizer(
                 seat_arrangements, data=request.data, partial=True
             )
 
