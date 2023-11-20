@@ -61,22 +61,21 @@ class MovieSelectionView(APIView):
         screen = request.GET.get("screen")
         date = request.GET.get('dt')
         Q_Base = ~Q(status=RELEASED) & ( Q(shows__screen__theatre__location__place=location) | Q(shows__screen__theatre__location__district=location))
-        q_query = Q()
         if q:
             q_query = Q(shows__language__name=q)
             Q_Base &= q_query
             if movie and cinemas and screen:
                 response = self.get_screen_details(location, cinemas, screen,q,movie,date)
-                # response_data = ({
-                #     "status":status.HTTP_200_OK ,
-                #     "movie": response['screen_details']["screen"]["shows_set"][0]["movies"]["movie_name"] ,
-                #     "language": response['screen_details']["screen"]["shows_set"][0]["language"]["name"] ,
-                #     "screen_number": response['screen_details']["screen"]["screen_number"] ,
-                #     "date": [i["dates"] for i in response['screen_details']["screen"]["shows_set"][0]["show_dates"]],
-                #     "time": [i["time"] for i in response['screen_details']["screen"]["shows_set"][0]["show_time"]] ,
-                #     "seating": response['screen_details']["seating"] 
-                # })
-                return Response(response, status=status.HTTP_200_OK)
+                response_data = ({
+                    "status":status.HTTP_200_OK ,
+                    "movie": response['screen_details']["screen"]["shows_set"][0]["movies"]["movie_name"] ,
+                    "language": response['screen_details']["screen"]["shows_set"][0]["language"]["name"] ,
+                    "screen_number": response['screen_details']["screen"]["screen_number"] ,
+                    "date": [i["dates"] for i in response['screen_details']["screen"]["shows_set"][0]["show_dates"]],
+                    "time": [i["time"] for i in response['screen_details']["screen"]["shows_set"][0]["show_time"]] ,
+                    "seating": response['screen_details']["seating"] 
+                })
+                return Response(response_data, status=status.HTTP_200_OK)
             elif movie:  
                 Q_Base = (
                     Q(shows__movies__movie_name=movie) & ( 
