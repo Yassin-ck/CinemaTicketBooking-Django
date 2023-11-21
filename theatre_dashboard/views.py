@@ -15,7 +15,8 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 from utils.mapping_variables import row_alpha
 from authentications.serializers import (
     LocationListSerializer,
-    RequestedLocationListSerializer
+    RequestedLocationCreateUpdateSerializer,
+    OtpSerilizers
 )
 from .serializers import (
     TheatreDetailsCreateUpdateSerializer,
@@ -37,10 +38,19 @@ from .models import (
     ScreenDetails,
     ScreenSeatArrangement,
 )
-
+from drf_yasg.utils import swagger_auto_schema
 
 @permission_classes([IsAuthenticated])
 class TheatreOwnerFormApplication(APIView):
+    @swagger_auto_schema(
+        tags=["Theatre Owner"],
+        operation_description="Application Form for TheatreOwners",
+        request_body=TheatrOwnerCreateUpdateSerializer,
+        responses={
+            201:TheatrOwnerCreateUpdateSerializer,
+            400:"bad request"
+        }
+    )
     def post(self, request):
         serializer = TheatrOwnerCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
@@ -71,11 +81,20 @@ class TheatreOwnerFormApplication(APIView):
 
 @permission_classes([IsAuthenticated])
 class TheatreOwnerVerification(APIView):
+    @swagger_auto_schema(
+        tags=["Theatre Owner"],
+        operation_description="Verifiying Phone Number,ignore email and otp fields in the body",
+        request_body=OtpSerilizers,
+        responses={
+            200:OtpSerilizers,
+            400:"bad request"
+        })
     def post(self, request):
         verification_sid = request.data.get("verification_sid")
         otp_entered = request.data.get("otp_entered")
+        serializer = OtpSerilizers(data=request.data)
+        serializer.is_valid(raise_exception=True)
         verify_status = verify_user_code(verification_sid, otp_entered)
-        print(verify_status)
         if verify_status is not None and verify_status.status == "approved":
             try:
                 user = TheareOwnerDetails.objects.get(user=request.user)
@@ -94,6 +113,14 @@ class TheatreOwnerVerification(APIView):
 
 @permission_classes([IsAuthenticated])
 class TheatreRegistration(APIView):
+    @swagger_auto_schema(
+        tags=["Theatres"],
+        operation_description="Application Form for Theatre details",
+        request_body=TheatreDetailsCreateUpdateSerializer,
+        responses={
+            201:TheatreDetailsCreateUpdateSerializer,
+            400:"bad request"
+        })
     def post(self, request):
         serializer = TheatreDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
@@ -118,12 +145,21 @@ class TheatreRegistration(APIView):
             email_from = theatre.email
             recipient_list = (settings.EMAIL_HOST_USER,)
             send_email(subject, message, email_from, recipient_list)
-            return Response({"msg": "success"}, status=status.HTTP_200_OK)
+            return Response({"msg": "success"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticated])
 class TheatreLoginRequest(APIView):
+    @swagger_auto_schema(
+        tags=["Theatres"],
+        operation_description="TheatreLogin interface",
+        request_body=TheatreDetailsCreateUpdateSerializer,
+        responses={
+            201:TheatreDetailsCreateUpdateSerializer,
+            400:"bad request"
+        })
+    
     def post(self, request):
         email = request.data.get("email")
         try:
@@ -143,27 +179,46 @@ class TheatreLoginRequest(APIView):
 
 @permission_classes([IsAuthenticated])
 class TheatreLoginVerify(APIView):
+    @swagger_auto_schema(
+        tags=["Theatres"],
+        operation_description="Otp Verification For Theatre AUthentication",
+        request_body=OtpSerilizers,
+        responses={
+            200:OtpSerilizers,
+            400:"bad request"
+        })
     def post(self, request):
         print(request.data)
         otp = request.data.get("otp")
         otp_entered = request.data.get("otp_entered")
-        if otp == otp_entered:
-            email = request.data.get("email")
-            try:
-                theatre = TheatreDetails.objects.get(
-                    Q(email=email) & Q(is_approved=True)
-                )
-                token = views.get_tokens_for_user(theatre.owner.user, email)
-                return Response(
-                    {"msg": "loginned", "token": token}, status=status.HTTP_200_OK
-                )
-            except MyUser.DoesNotExist:
-                return Response({"msgt": "You are not Verified.."})
-        return Response({"msg": "invalid otp.."}, status=status.HTTP_400_BAD_REQUEST)
+        email = request.data.get("email")
+        serializer = OtpSerilizers(data=request.data)
+        if serializer.is_valid():
+            if otp == otp_entered:
+                try:
+                    theatre = TheatreDetails.objects.get(
+                        Q(email=email) & Q(is_approved=True)
+                    )
+                    token = views.get_tokens_for_user(theatre.owner.user, email)
+                    return Response(
+                        {"msg": "loginned", "token": token}, status=status.HTTP_200_OK
+                    )
+                except MyUser.DoesNotExist:
+                    return Response({"msgt": "You are not Verified.."})
+            return Response({"msg": "invalid otp.."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticatedOrReadOnly])
 class SearchLocaition(APIView):
+    @swagger_auto_schema(
+        tags=["location"],
+        operation_description="Search the Location Here",
+        responses={
+            200:LocationListSerializer,
+            400:"bad request",
+            404:"not found"
+        })
     def get(self, request):
         q = request.GET.get("q")
         if len(q) == 0:
@@ -176,9 +231,21 @@ class SearchLocaition(APIView):
         return Response(
             {"msg": "Location not found..."}, status=status.HTTP_404_NOT_FOUND
         )
+        
+        
+        
+    
 
+    @swagger_auto_schema(
+        tags=["location"],
+        operation_description="New Location request",
+        request_body=RequestedLocationCreateUpdateSerializer,
+        responses={
+            200:RequestedLocationCreateUpdateSerializer,
+            400:"bad request",
+        })
     def post(self, request):
-        serializer = RequestedLocationListSerializer(data=request.data)
+        serializer = RequestedLocationCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             try:
                 RequestLocation.objects.create(
@@ -205,15 +272,30 @@ class SearchLocaition(APIView):
 
 @authentication_classes([TheatreAuthentication])
 class TheatreDetailsView(APIView):
+    @swagger_auto_schema(
+        tags=["Theatres"],
+        operation_description="Theatre Details View For Theatres",
+        responses={
+            200:TheatreListSerializer,
+            404:"not found"
+        })
     def get(self, request):
-        if TheareOwnerDetails.objects.filter(user=request.user).exists():
-            theatre = TheatreDetails.objects.filter(owner__user=request.user)
+        theatre = TheatreDetails.objects.filter(owner__user=request.user)
+        if theatre:
             serializer = TheatreListSerializer(theatre, many=True)
-            return Response({"theatre": serializer.data})
+            return Response({"theatre": serializer.data},status=status.HTTP_200_OK)
+        return Response({"error":"Something Went Wrong"},status=status.HTTP_404_NOT_FOUND)
 
 
 @authentication_classes([TheatreAuthentication])
 class ScreenDetailsForm(APIView):
+    @swagger_auto_schema(
+        tags=["Screen"],
+        operation_description="Screen Details View For Theatres",
+        responses={
+            200:ScreenDetailsListSerializer,
+            400:"Bad Request"
+        })
     def get(self, request, pk=None):
         if not pk:
             screen_details = ScreenDetails.objects.filter(theatre__email=request.auth)
@@ -224,7 +306,17 @@ class ScreenDetailsForm(APIView):
             )
             serializer = ScreenDetailsListSerializer(screen_details)
         return Response({"screens": serializer.data}, status=status.HTTP_200_OK)
+    
+    
 
+    @swagger_auto_schema(
+        tags=["Screen"],
+        operation_description="Screen Details updation",
+        request_body=ScreenDetailsCreateUpdateSerailizer,
+        responses={
+            200:ScreenDetailsCreateUpdateSerailizer,
+            400:"Bad Request"
+        })
     def put(self, request, pk=None):
         if pk is not None:
             screen_detail = ScreenDetails.objects.get(
@@ -241,6 +333,13 @@ class ScreenDetailsForm(APIView):
 
 @authentication_classes([TheatreAuthentication])
 class ScreenSeatArrangementDetails(APIView):
+    @swagger_auto_schema(
+        tags=["SeatArrangements"],
+        operation_description="Screen Seats view ",
+        responses={
+            200:ScreenSeatArrangementListSerailizer,
+            400:"Bad Request"
+        })
     def get(self, request, pk=None):
         if pk:
             seat_arrange = (
@@ -263,7 +362,18 @@ class ScreenSeatArrangementDetails(APIView):
                 seat_arrange.save()
             serializer = ScreenSeatArrangementListSerailizer(seat_arrange)
             return Response({"screens": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"msg": "specify the id"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+    @swagger_auto_schema(
+        tags=["SeatArrangements"],
+        operation_description="Screen Seats Updations ",
+        request_body=ScreenSeatArrangementCreateUpdateSerailizer,
+        responses={
+            200:ScreenSeatArrangementCreateUpdateSerailizer,
+            400:"Bad Request"
+        })
     def put(self, request, pk=None):
         if pk is not None:
             seat_arrangements = (
@@ -298,3 +408,6 @@ class ScreenSeatArrangementDetails(APIView):
                     status=status.HTTP_200_OK,
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"errors":"specify the id"}, status=status.HTTP_400_BAD_REQUEST)
+
+

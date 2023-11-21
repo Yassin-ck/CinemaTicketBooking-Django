@@ -54,15 +54,12 @@ class UserProfileViewBYAdmin(APIView):
         }
     )
     def get(self, request):
-        user_profile = UserProfile.objects.select_related("user")
+        user_profile = UserProfile.objects.select_related("user").order_by("user__username")
         number_of_users = len(user_profile)
         paginator = UserProfilePagination()
         number_of_page = number_of_users // paginator.page_size
         result_page = paginator.paginate_queryset(user_profile, request)
-        serializer = UserProfileListSerializer(
-            result_page, many=True, context={"request": request}
-        )
-        print(serializer.data)
+        serializer = UserProfileListSerializer(result_page, many=True, context={"request": request})
         response_data = {
             "user": serializer.data,
             "page_number": number_of_page,
@@ -263,7 +260,7 @@ class MovieDetailsAdding(APIView):
             except:
                 return Response({"errors":"Not Available"},status=status.HTTP_404_NOT_FOUND)
             serializer = MovieDetailsChoiceSerializer(movies)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK,content_type="multipart/formdata")
 
 
 
@@ -282,7 +279,7 @@ class MovieDetailsAdding(APIView):
         serializer = MovieDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             print(serializer.data)
-            movies = MoviesDetails.objects.create(
+            MoviesDetails.objects.create(
                 movie_name=serializer.validated_data.get("movie_name"),
                 poster=serializer.validated_data.get("poster"),
                 director=serializer.validated_data.get("director"),

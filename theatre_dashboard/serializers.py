@@ -182,7 +182,7 @@ class ScreenDetailsCreateUpdateSerailizer(serializers.ModelSerializer):
         return instance
 
 
-class ScreenDetaiChoicesSerializer(serializers.ModelSerializer):
+class ScreenDetailsChoicesSerializer(serializers.ModelSerializer):
     shows_set = ShowsChoiceSerializer(many=True)
     theatre = TheatreListSerializer()
 
@@ -205,7 +205,7 @@ class ScreenSeatArrangementCreateUpdateSerailizer(serializers.ModelSerializer):
 
 
 class ScreenSeatArrangementChoiceSerailizer(serializers.ModelSerializer):
-    screen = ScreenDetaiChoicesSerializer()
+    screen = ScreenDetailsChoicesSerializer()
     class Meta:
         model = ScreenSeatArrangement
         fields = (

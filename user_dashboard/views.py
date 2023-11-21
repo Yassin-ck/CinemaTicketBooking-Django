@@ -25,7 +25,7 @@ from admin_dashboard.serializers import (
 )
 from theatre_dashboard.serializers import (
     TheatreListSerializer,
-    ScreenDetaiChoicesSerializer,
+    ScreenDetailsChoicesSerializer,
     ScreenSeatArrangementChoiceSerailizer
 )
 from drf_yasg import openapi
@@ -87,7 +87,9 @@ class MovieSelectionView(APIView):
         cinemas = request.GET.get("cinemas")
         screen = request.GET.get("screen")
         date = request.GET.get('dt')
-        Q_Base = ~Q(status=RELEASED) & ( Q(shows__screen__theatre__location__place=location) | Q(shows__screen__theatre__location__district=location))
+        Q_Base =~Q(status=RELEASED) 
+        if location:
+            Q_Base &= (Q(shows__screen__theatre__location__place=location) | Q(shows__screen__theatre__location__district=location))
         if q:
             q_query = Q(shows__language__name=q)
             Q_Base &= q_query
@@ -116,7 +118,7 @@ class MovieSelectionView(APIView):
                 Prefetch("shows_set",Shows.objects.select_related("movies", "language")
                 .prefetch_related("show_time", Prefetch("show_dates",ShowDates.objects.filter(dates__range=(today,to_third_day)))))
                ).distinct()
-                serializer = ScreenDetaiChoicesSerializer(theatres, many=True)
+                serializer = ScreenDetailsChoicesSerializer(theatres, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
         movies = MoviesDetails.objects.filter(Q_Base).distinct()
         serializer = MovieDetailListSerializer(movies, many=True)
@@ -178,7 +180,7 @@ class TheatreSelectionView(APIView):
             screens = ScreenDetails.objects.filter(Q_Base).select_related("theatre").prefetch_related(
             Prefetch("shows_set",Shows.objects.select_related("movies","language")
             .prefetch_related("show_time",Prefetch("show_dates",ShowDates.objects.filter(dates__range=(today,to_third_day))))))
-            serializer = ScreenDetaiChoicesSerializer(screens, many=True)
+            serializer = ScreenDetailsChoicesSerializer(screens, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         Q_Base = Q(screen__theatre__theatre_name=cinemas) & (Q(screen__theatre__location__place=location)| Q(screen__theatre__location__district=location))& Q(screen__screen_number=screen)
         if date:        
@@ -192,7 +194,5 @@ class TheatreSelectionView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
-
-
 
 

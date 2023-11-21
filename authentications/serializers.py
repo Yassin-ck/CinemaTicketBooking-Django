@@ -132,7 +132,14 @@ class RequestedLocationListSerializer(serializers.ModelSerializer):
 class RequestedLocationCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestLocation
-        fields = ("status",)
+        fields = (
+            "user",
+            "country",
+            "state",
+            "district",
+            "place",
+        )
+
 
     def update(instance, validated_data):
         instance.status = validated_data.get("status", instance.status)
