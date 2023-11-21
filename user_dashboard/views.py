@@ -28,6 +28,8 @@ from theatre_dashboard.serializers import (
     ScreenDetaiChoicesSerializer,
     ScreenSeatArrangementChoiceSerailizer
 )
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
     
 
@@ -40,19 +42,44 @@ def screen_seat_details(Q_Base,query):
 
 @permission_classes([AllowAny])
 class MovieSearching(APIView):
+    name = openapi.Parameter('q',in_=openapi.IN_QUERY, description="movie name or director name",type=openapi.TYPE_STRING,)
+    @swagger_auto_schema(
+        operation_description="return list of movies by searching movie name or director name",
+        manual_parameters=[name],
+        responses={
+            200:MovieDetailListSerializer,
+            404:"Not Found",
+            500:"errors"
+        }
+    )
     def get(self, reqeust):
         q = reqeust.GET.get("q")
         Q_base = Q(movie_name__icontains=q) | Q(director__icontains=q)
         if not q:
             pass
         movies = MoviesDetails.objects.filter(Q_base)
-        serializer = MovieDetailListSerializer(movies, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
+        if movies:
+            serializer = MovieDetailListSerializer(movies, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"data":"Not Found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @permission_classes([AllowAny])
 class MovieSelectionView(APIView):
+    location = openapi.Parameter( 'search', in_=openapi.IN_QUERY, description='location', type=openapi.TYPE_STRING, )
+    language = openapi.Parameter( 'q', in_=openapi.IN_QUERY, description='language', type=openapi.TYPE_STRING, )
+    movie = openapi.Parameter( 'movie', in_=openapi.IN_QUERY, description='movies', type=openapi.TYPE_STRING, )
+    cinemas = openapi.Parameter( 'cinemas', in_=openapi.IN_QUERY, description='theatre', type=openapi.TYPE_STRING, )
+    screen = openapi.Parameter( 'screen', in_=openapi.IN_QUERY, description='screen number', type=openapi.TYPE_STRING, )
+    date = openapi.Parameter( 'dt', in_=openapi.IN_QUERY, description='date', type=openapi.TYPE_STRING, )
+    @swagger_auto_schema(
+    manual_parameters=( location, language, movie, cinemas, screen,date),
+    operation_description = f"return list of all recordes of theatre and details by location of user",
+    responses = {
+        200:ScreenSeatArrangementChoiceSerailizer,
+        400:'bad syntax',
+        500:'error'
+        })
     def get(self, request):
         q = request.GET.get("q")
         location = request.GET.get("search")
@@ -95,6 +122,8 @@ class MovieSelectionView(APIView):
         serializer = MovieDetailListSerializer(movies, many=True)
         return Response({"movies": serializer.data}, status=status.HTTP_200_OK)
 
+
+
     def get_screen_details(self, location, cinemas, screen,q,movie,date=None):
         Q_Base = (
             Q(screen__theatre__theatre_name=cinemas) &
@@ -119,6 +148,22 @@ class MovieSelectionView(APIView):
 
 @permission_classes([AllowAny])
 class TheatreSelectionView(APIView):
+    location = openapi.Parameter( 'search', in_=openapi.IN_QUERY, description='location', type=openapi.TYPE_STRING, )
+    cinemas = openapi.Parameter( 'cinemas', in_=openapi.IN_QUERY, description='theatre', type=openapi.TYPE_STRING, )
+    screen = openapi.Parameter( 'screen', in_=openapi.IN_QUERY, description='screen number', type=openapi.TYPE_STRING, )
+    date = openapi.Parameter( 'dt', in_=openapi.IN_QUERY, description='date', type=openapi.TYPE_STRING, )
+    @swagger_auto_schema(
+        tags={
+            'users'
+        },
+        manual_parameters=(location,cinemas,screen,date),
+        operation_description="return Theatre detials , screens , movies by users location",
+        responses={
+            200:ScreenSeatArrangementChoiceSerailizer,
+            404:"Not Found",
+            500:"errors"
+        }
+    )
     def get(self, request):
         location = request.GET.get("search")
         cinemas = request.GET.get("cinemas")

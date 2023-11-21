@@ -5,14 +5,18 @@ from .views import (
     UserProfileView,
     GoogleSocialAuthView,
     CurrentLocation,
-    EmailAuthAndUpdationView,
-    EmailVerification,
+    EmailAuthView,
+    EmailUpdateView,
+    EmailAuthVerification,
+    EmailUpdateVerification
 )
 
 urlpatterns = [
     path("google/", GoogleSocialAuthView.as_view(), name="google"),
-    path("email/", EmailAuthAndUpdationView.as_view(), name="email"),
-    path("email/otp/", EmailVerification.as_view(), name="emailotp"),
+    path("emailauth/", EmailAuthView.as_view(), name="emailauth"),
+    path("emailupdate/", EmailUpdateView.as_view(), name="emailupdate"),
+    path("emailauth/otp/", EmailAuthVerification.as_view(), name="emailauthotp"),
+    path("emailupdate/otp/", EmailUpdateVerification.as_view(), name="emailupdateotp"),
     path("userprofile/", UserProfileView.as_view(), name="userprofile"),
     path("userprofile/phone/", MobilePhoneUpdate.as_view(), name="phone"),
     path("userprofile/phone/otp/", OtpVerification.as_view(), name="otp"),

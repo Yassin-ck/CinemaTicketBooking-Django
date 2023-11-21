@@ -41,7 +41,6 @@ class MovieDetailsCreateUpdateSerializer(serializers.ModelSerializer):
         model = MoviesDetails
         fields = (
             "movie_name",
-            "languages",
             "poster",
             "director"
             )

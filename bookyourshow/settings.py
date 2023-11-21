@@ -236,14 +236,14 @@ IP_AUTH = os.getenv("IP_AUTH")
 
 #swagger
 SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'basic': {
-            'type': 'basic'
-        }
-    },
+    "TITLE": "cinemaTicketBooking",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SECURITY_DEFINITIONS":{
+        'Bearer': {
+            'in': 'header',
+            'name': 'Authorization',
+            'type': 'apiKey',
+        },
+    }
 }
-
-REDOC_SETTINGS = {
-   'LAZY_RENDERING': False,
-   
-}
+ 
