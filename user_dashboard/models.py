@@ -6,8 +6,6 @@ from theatre_dashboard.models import (
 )
 
 
-# class Payments(models.Model):
-#     pass
 
 class TicketBooking(models.Model):
     user = models.ForeignKey(MyUser, on_delete=models.CASCADE, null=True, blank=True)

@@ -127,7 +127,8 @@ class TheatreOwnerRequest(APIView):
             serializer = TheatreOwnerListSerializer(details)
         return Response(serializer.data,status=status.HTTP_200_OK)
         
-                
+
+
 
     @swagger_auto_schema(
         tags=['Admin Verification'],
