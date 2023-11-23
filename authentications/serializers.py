@@ -133,7 +133,6 @@ class RequestedLocationCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RequestLocation
         fields = (
-            "user",
             "country",
             "state",
             "district",

@@ -64,7 +64,7 @@ class CurrentLocation(APIView):
                 ip_type = "private"
         print(ip_type, client_ip)
         auth = settings.IP_AUTH
-        ip_address = "157.46.156.31"  # for checking
+        ip_address = "103.70.197.189"  # for checking
         url = f"https://api.ipfind.com/?auth={auth}&ip={ip_address}"
         response = urllib.request.urlopen(url)
         data = json.loads(response.read())
@@ -102,9 +102,9 @@ class EmailAuthView(APIView):
         email_from = settings.EMAIL_HOST_USER
         recipient_list = (email,)
         email_thread = Thread(
-            target=send_email, args=(subject, message, email_from, recipient_list)
+            target=send_email, args=(subject, message,email_from, recipient_list)  
         )
-        email_thread.start()
+        email_thread.start()   
         response_data = {"email": email, "otp": otp}
         return Response(response_data, status=status.HTTP_200_OK)
 

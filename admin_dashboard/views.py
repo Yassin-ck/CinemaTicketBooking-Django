@@ -54,7 +54,7 @@ class UserProfileViewBYAdmin(APIView):
         }
     )
     def get(self, request):
-        user_profile = UserProfile.objects.select_related("user").order_by("user__username")
+        user_profile = UserProfile.objects.select_related("user").order_by("user_id")
         number_of_users = len(user_profile)
         paginator = UserProfilePagination()
         number_of_page = number_of_users // paginator.page_size
@@ -127,8 +127,7 @@ class TheatreOwnerRequest(APIView):
             serializer = TheatreOwnerListSerializer(details)
         return Response(serializer.data,status=status.HTTP_200_OK)
         
-        
-        
+                
 
     @swagger_auto_schema(
         tags=['Admin Verification'],

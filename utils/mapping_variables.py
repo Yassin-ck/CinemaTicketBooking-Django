@@ -37,3 +37,5 @@ to_third_day = today + timedelta(days=3)
 UPCOMING = "UPCOMING"
 PENDING = "PENDING"
 RELEASED = "RELEASED"
+ 
+Available_dates = (str(today),str(today+timedelta(days=1)),str(today+timedelta(days=2)),str(to_third_day))

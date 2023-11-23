@@ -209,6 +209,7 @@ class TheatreLoginVerify(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 @permission_classes([IsAuthenticatedOrReadOnly])
 class SearchLocaition(APIView):
     @swagger_auto_schema(
@@ -342,6 +343,7 @@ class ScreenSeatArrangementDetails(APIView):
         })
     def get(self, request, pk=None):
         if pk:
+            print(request.auth)
             seat_arrange = (
                 ScreenSeatArrangement.objects.filter(
                     Q(screen_id=pk) & Q(screen__theatre__email=request.auth)
@@ -349,14 +351,13 @@ class ScreenSeatArrangementDetails(APIView):
                 .select_related("screen")
                 .first()
             )
+            print(seat_arrange)
             if not seat_arrange.seating:
                 screen_detail = seat_arrange.screen
                 row_number = screen_detail.row_count
                 column = screen_detail.column_count       
                 row = [j for i, j in zip(range(1, row_number + 1), row_alpha)]
-                Seating_arrangement = [
-                    f"{j}{i}" for i in range(1, column + 1) for j in row
-                ]
+                Seating_arrangement = [[f"{row}{i}" for i in range(1, column + 1)] for row in row_alpha[:row_number]]
                 sorted_seating = sorted(Seating_arrangement, key=lambda x: (x[0]))
                 seat_arrange.seating = sorted_seating
                 seat_arrange.save()

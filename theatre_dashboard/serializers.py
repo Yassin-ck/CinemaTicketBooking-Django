@@ -146,7 +146,7 @@ class ShowsChoiceSerializer(serializers.ModelSerializer):
             "language",
             "show_dates"
             )
-        
+            
 
 
 class ScreenDetailsListSerializer(serializers.ModelSerializer):
@@ -188,8 +188,10 @@ class ScreenDetailsChoicesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ScreenDetails
-        fields = ("screen_number", "shows_set", "theatre")
-
+        fields = ("screen_number", "shows_set", "theatre","row_count",'column_count')
+    
+    
+    
 
 
 class ScreenSeatArrangementListSerailizer(serializers.ModelSerializer):
