@@ -17,6 +17,7 @@ from theatre_dashboard.models import (
     TheatreDetails,
     ScreenDetails,
     ScreenSeatArrangement,
+    Shows
 
 )
 from admin_dashboard.serializers import (
@@ -24,6 +25,7 @@ from admin_dashboard.serializers import (
 )
 from theatre_dashboard.serializers import (
     ScreenSeatArrangementChoiceSerailizer,
+    ShowDatesChoiceSerializer
     
 )
 from drf_yasg import openapi
@@ -100,7 +102,9 @@ class MovieSelectionView(APIView):
                 ~Q(status=RELEASED) &
                 (Q(shows__screen__theatre__location__place=location) |
                 Q(shows__screen__theatre__location__district=location)) &
-                Q(shows__show_dates__dates__range=(today,to_third_day)))
+                Q(shows__show_dates__dates__range=(today,to_third_day))&
+                Q(shows__screen__is_approved=True)
+                )
         if movie and cinemas and screen:
             if q != 'all' and q is not None :
                 response = self.get_screen_details(location ,cinemas,date,screen,movie,times,q)
@@ -112,42 +116,44 @@ class MovieSelectionView(APIView):
                 Q(shows__movies__movie_name=movie) & ( 
                 Q(theatre__location__place=location)| 
                 Q(theatre__location__district=location)) &
-                Q(screenseatarrangement__is_approved=True)&
-                Q(shows__show_dates__dates=date))
+                Q(is_approved=True)&
+                Q(shows__show_dates__dates__range=(today,to_third_day))
+                )
             if q != 'all' and q is not None :  
                 Q_Base &= Q(shows__language__name=q)
-            response = self.get_theatre_screen_details(Q_Base) 
-            return Response({'data':response,'dates':Available_dates}, status=status.HTTP_200_OK)       
-        if q != 'all' and q is not None :
-            Q_Base &= Q(shows__language__name=q)
-        movies = MoviesDetails.objects.filter(Q_Base).distinct().values('id','movie_name','poster','director')
-        languages = Languages.objects.all().values('name')
-        return Response({"movies": movies,"languages":languages}, status=status.HTTP_200_OK)
-
+            response = self.get_theatre_screen_details(Q_Base,date) 
+            return Response(response, status=status.HTTP_200_OK)       
+        movies = MoviesDetails.objects.filter(Q_Base).distinct().values('id', 'movie_name', 'poster', 'director', 'shows__language__name')
+        languages = list(set(data['shows__language__name'] for data in movies))
+        movie_data = [data for data in movies if q == 'all' or data.get('shows__language__name') == q]
+        return Response({"movies": movie_data, 'languages': languages}, status=status.HTTP_200_OK)
 
     
-    def get_theatre_screen_details(self,Q_Base):
-        theatres = ScreenDetails.objects.filter(Q_Base).annotate(
+    def get_theatre_screen_details(self,Q_Base,date):
+        queryset = ScreenDetails.objects.filter(Q_Base).annotate(
             theatre_name=F('theatre__theatre_name'),
             show_time=F('shows__show_time__time'),
-            language = F('shows__language__name')
+            language = F('shows__language__name'),
+            show_dates = F('shows__show_dates__dates')
             ).values('screen_number',
                      'theatre_name',
                      'show_time',
-                     'language'
+                     'language',
+                     'show_dates'             
                      ).distinct()
-        screen_data = []
-        for i in theatres:
-            time = i['show_time']
-            screen = str(i['screen_number'])
-            theatre = i['theatre_name']
-            language = i['language']
-            entry = next((entry for entry in screen_data if entry['theatre_name'] == theatre and entry['screen_number'] == screen), None)
-            if entry:
-                entry['times'].append(time)
-            else:
-                screen_data.append({'theatre_name': theatre, 'screen_number': screen,'language':language, 'times': [time]})
-        return screen_data
+
+        current_screen_data = []
+        date_data = []
+        for screen_details in queryset:
+            if str(screen_details.get('show_dates')) == date:
+                current_screen_data.append(screen_details)
+            if str(screen_details.get('show_dates')) not in date_data:
+                date_data.append(str(screen_details.get('show_dates')))
+        response_data = {
+            "data" : current_screen_data,
+            "dates":date_data  
+        }
+        return response_data
 
 
 
@@ -159,8 +165,7 @@ class MovieSelectionView(APIView):
             Q(screen__screen_number=screen) &
             Q(screen__shows__movies__movie_name=movie) &
             Q(screen__shows__show_dates__dates=date) &
-            Q(screen__shows__show_time__time=times) &
-            Q(is_approved=True)
+            Q(screen__shows__show_time__time=times) 
             )
         if q :
             Q_Base &= Q(screen__shows__language__name=q) 
@@ -194,28 +199,49 @@ class TheatreSelectionView(APIView):
         screen = request.GET.get("screen")
         date = request.GET.get("dt")
         if not cinemas and not screen :
-            theatres = TheatreDetails.objects.filter(Q(location__place=location) | Q(location__district=location)).values("theatre_name", "address")
-            return Response(theatres, status=status.HTTP_200_OK)
+            queryset = TheatreDetails.objects.filter(
+                Q(location__place=location) | 
+                Q(location__district=location) & 
+                Q(is_verified=True)).values("theatre_name", "address")
+            if queryset:
+                return Response(queryset, status=status.HTTP_200_OK)
+            return Response({"msg":"No theatre In your Location"}, status=status.HTTP_404_NOT_FOUND)
+                
         if date not in Available_dates:
             return Response({"error":"page not found"},status=status.HTTP_404_NOT_FOUND)
         if not screen and date: 
-            screens = ScreenDetails.objects.filter((
+            queryset = ScreenDetails.objects.filter((
                 Q(theatre__theatre_name=cinemas) & (
                 Q(theatre__location__place=location) | 
                 Q(theatre__location__district=location) & 
-                Q(shows__show_dates__dates=date))
+                Q(shows__show_dates__dates__range=(today,to_third_day))&
+                Q(is_approved=True))
                 )).annotate(
                 theatre_name=F('theatre__theatre_name'),
                 show_time=F('shows__show_time__time'),
                 movie_name=F('shows__movies__movie_name'),
+                show_dates=F('shows__show_dates__dates'),
                 language=F('shows__language__name')).values(
                     "screen_number",
                     'theatre_name',
                     'show_time',
                     'movie_name',
-                    'language'
+                    'language',
+                    'show_dates'
                     )
-            return Response({'data':screens,'dates':Available_dates}, status=status.HTTP_200_OK)
+            
+            current_screen_data = []
+            date_data = []
+            for screen_details in queryset:
+                if str(screen_details.get('show_dates')) == date:
+                    current_screen_data.append(screen_details)
+                if str(screen_details.get('show_dates')) not in date_data:
+                    date_data.append(str(screen_details.get('show_dates')))
+            response_data = {
+                "data" : current_screen_data,
+                "dates":date_data  
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
         
     
     

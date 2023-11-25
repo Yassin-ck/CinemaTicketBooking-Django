@@ -178,6 +178,9 @@ class ScreenDetailsCreateUpdateSerailizer(serializers.ModelSerializer):
         instance.number_of_seats = validated_data.get("number_of_seats", instance.number_of_seats)
         instance.row_count = validated_data.get("row_count", instance.row_count)
         instance.column_count = validated_data.get("column_count", instance.column_count )
+        if  int(instance.column_count) * int(instance.row_count) != int(instance.number_of_seats):
+            raise serializers.ValidationError({'error': 'The product of row count and column count must equal the number of seats.'})
+        instance.is_approved=True
         instance.save()
         return instance
 

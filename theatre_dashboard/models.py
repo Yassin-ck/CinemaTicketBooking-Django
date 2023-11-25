@@ -43,6 +43,7 @@ class TheatreDetails(models.Model):
     address = models.TextField()
     num_of_screens = models.CharField(max_length=2)
     certification = models.ImageField(upload_to="TheatreCertification/")
+    is_verified = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
 
 
@@ -62,6 +63,19 @@ class ShowDates(models.Model):
     def __str__(self) -> str:
         return f"{self.dates}"
     
+
+class ScreenDetails(models.Model):
+    theatre = models.ForeignKey(
+        TheatreDetails, on_delete=models.CASCADE, related_name="screen_details"
+    )
+    screen_number = models.IntegerField(null=True, blank=True)
+    number_of_seats = models.IntegerField(null=True, blank=True)
+    row_count = models.IntegerField(null=True, blank=True)
+    column_count = models.IntegerField(null=True, blank=True)
+    is_approved = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f"{self.theatre.theatre_name}'s screen number {self.screen_number}"
     
     
 class Shows(models.Model):
@@ -72,25 +86,13 @@ class Shows(models.Model):
     )
     language = models.ForeignKey(Languages,on_delete=models.DO_NOTHING)
     screen = models.ForeignKey(
-        "ScreenDetails", on_delete=models.PROTECT, null=True, blank=True
+     ScreenDetails, on_delete=models.PROTECT, null=True, blank=True
     )
 
     def __str__(self) -> str:
         return  f"{self.id}"
     
 
-
-class ScreenDetails(models.Model):
-    theatre = models.ForeignKey(
-        TheatreDetails, on_delete=models.CASCADE, related_name="screen_details"
-    )
-    screen_number = models.IntegerField(null=True, blank=True)
-    number_of_seats = models.IntegerField(null=True, blank=True)
-    row_count = models.IntegerField(null=True, blank=True)
-    column_count = models.IntegerField(null=True, blank=True)
-
-    def __str__(self) -> str:
-        return f"{self.theatre.theatre_name}'s screen number {self.screen_number}"
 
 
 class ScreenSeatArrangement(models.Model):
@@ -103,7 +105,6 @@ class ScreenSeatArrangement(models.Model):
         ("BOOKING", "GREEN"),
     ]
     seating = models.JSONField(null=True, blank=True)
-    is_approved = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return str(self.screen.screen_number)

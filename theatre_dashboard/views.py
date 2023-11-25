@@ -37,6 +37,9 @@ from .models import (
     TheatreDetails,
     ScreenDetails,
     ScreenSeatArrangement,
+    Shows,
+    ShowDates,
+    ShowTime
 )
 from drf_yasg.utils import swagger_auto_schema
 
@@ -145,7 +148,8 @@ class TheatreRegistration(APIView):
             email_from = theatre.email
             recipient_list = (settings.EMAIL_HOST_USER,)
             send_email(subject, message, email_from, recipient_list)
-            return Response({"msg": "success"}, status=status.HTTP_201_CREATED)
+            token = views.get_tokens_for_user(theatre.owner.user, theatre.email)
+            return Response({"msg": "success",'token':token}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -193,18 +197,24 @@ class TheatreLoginVerify(APIView):
         otp_entered = request.data.get("otp_entered")
         email = request.data.get("email")
         serializer = OtpSerilizers(data=request.data)
+        print(otp)
+        print(otp_entered)
         if serializer.is_valid():
-            if otp == otp_entered:
+            if int(otp) == int(otp_entered):
                 try:
-                    theatre = TheatreDetails.objects.get(
-                        Q(email=email) & Q(is_approved=True)
-                    )
-                    token = views.get_tokens_for_user(theatre.owner.user, email)
-                    return Response(
-                        {"msg": "loginned", "token": token}, status=status.HTTP_200_OK
-                    )
-                except MyUser.DoesNotExist:
-                    return Response({"msgt": "You are not Verified.."})
+                    queryset= TheatreDetails.objects.filter(
+                        Q(email=email) &
+                        Q(is_approved=True)).prefetch_related(
+                            'screen_details__screenseatarrangement'
+                            ).first()
+                    token = views.get_tokens_for_user(queryset.owner.user, email)
+                    print(token)
+                    datas =  [i.id for i in queryset.screen_details.all() if i.is_approved == False ]
+                    if  not datas:
+                        return Response({"msg": "loginned", "token": token}, status=status.HTTP_200_OK)
+                    return Response({"warning": "Continue With your Updation","id":datas[0],"token": token}, status=status.HTTP_403_FORBIDDEN)
+                except TheatreDetails.DoesNotExist:
+                    return Response({"msg": "You are not Verified.."})
             return Response({"msg": "invalid otp.."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -272,6 +282,7 @@ class SearchLocaition(APIView):
 
 
 @authentication_classes([TheatreAuthentication])
+@permission_classes([IsAuthenticated])
 class TheatreDetailsView(APIView):
     @swagger_auto_schema(
         tags=["Theatres"],
@@ -298,16 +309,17 @@ class ScreenDetailsForm(APIView):
             400:"Bad Request"
         })
     def get(self, request, pk=None):
-        if not pk:
-            screen_details = ScreenDetails.objects.filter(theatre__email=request.auth)
-            serializer = ScreenDetailsListSerializer(screen_details, many=True)
+        if pk:
+            screen_details = self.get_object(request,pk)
         else:
-            screen_details = ScreenDetails.objects.get(
-                Q(id=pk) & Q(theatre__email=request.auth)
-            )
-            serializer = ScreenDetailsListSerializer(screen_details)
-        return Response({"screens": serializer.data}, status=status.HTTP_200_OK)
+            screen_details = ScreenDetails.objects.filter(theatre__email=request.auth).values()
+        return Response(screen_details, status=status.HTTP_200_OK)
     
+    
+    def get_object(self,request,pk):
+        return ScreenDetails.objects.filter(Q(id=pk) & 
+                                            Q(theatre__email=request.auth)).values().first()
+              
     
 
     @swagger_auto_schema(
@@ -319,20 +331,24 @@ class ScreenDetailsForm(APIView):
             400:"Bad Request"
         })
     def put(self, request, pk=None):
+        print(request.data)
         if pk is not None:
-            screen_detail = ScreenDetails.objects.get(
+            screen_detail = ScreenDetails.objects.filter(
                 Q(id=pk) & Q(theatre__email=request.auth)
-            )
+            ).select_related('theatre').first()
             serializer = ScreenDetailsCreateUpdateSerailizer(
                 screen_detail, data=request.data, partial=True
             )
             if serializer.is_valid():
+                screen_detail.theatre.is_verified = True
+                screen_detail.save()
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @authentication_classes([TheatreAuthentication])
+@permission_classes([IsAuthenticated])
 class ScreenSeatArrangementDetails(APIView):
     @swagger_auto_schema(
         tags=["SeatArrangements"],
@@ -343,72 +359,53 @@ class ScreenSeatArrangementDetails(APIView):
         })
     def get(self, request, pk=None):
         if pk:
-            print(request.auth)
-            seat_arrange = (
+            queryset = (
                 ScreenSeatArrangement.objects.filter(
-                    Q(screen_id=pk) & Q(screen__theatre__email=request.auth)
-                )
+                    Q(screen_id=pk) & Q(screen__theatre__email=request.auth))
                 .select_related("screen")
                 .first()
-            )
-            print(seat_arrange)
-            if not seat_arrange.seating:
-                screen_detail = seat_arrange.screen
-                row_number = screen_detail.row_count
-                column = screen_detail.column_count       
-                row = [j for i, j in zip(range(1, row_number + 1), row_alpha)]
-                Seating_arrangement = [[f"{row}{i}" for i in range(1, column + 1)] for row in row_alpha[:row_number]]
-                sorted_seating = sorted(Seating_arrangement, key=lambda x: (x[0]))
-                seat_arrange.seating = sorted_seating
-                seat_arrange.save()
-            serializer = ScreenSeatArrangementListSerailizer(seat_arrange)
-            return Response({"screens": serializer.data}, status=status.HTTP_200_OK)
+                 )
+            screen_detail = queryset.screen
+            if not queryset.seating:
+                self.seatArrangement(screen_detail,queryset)  
+            else:
+                if len(queryset.seating) != screen_detail.row_count:
+                    queryset.seating = []
+                    queryset.save()
+                    self.seatArrangement(screen_detail,queryset)
+            serializer = ScreenSeatArrangementListSerailizer(queryset)
+            return Response( serializer.data, status=status.HTTP_200_OK)
         return Response({"msg": "specify the id"}, status=status.HTTP_400_BAD_REQUEST)
 
+    def seatArrangement(self,screen_detail,queryset):
+        row_number = screen_detail.row_count
+        column = screen_detail.column_count       
+        row = [j for i, j in zip(range(1, row_number + 1), row_alpha)]
+        Seating_arrangement = [[f"{row}{i}" for i in range(1, column + 1)] for row in row_alpha[:row_number]]
+        sorted_seating = sorted(Seating_arrangement, key=lambda x: (x[0]))
+        queryset.seating = sorted_seating
+        queryset.save()
+        return
 
 
-    @swagger_auto_schema(
-        tags=["SeatArrangements"],
-        operation_description="Screen Seats Updations ",
-        request_body=ScreenSeatArrangementCreateUpdateSerailizer,
-        responses={
-            200:ScreenSeatArrangementCreateUpdateSerailizer,
-            400:"Bad Request"
-        })
-    def put(self, request, pk=None):
-        if pk is not None:
-            seat_arrangements = (
-                ScreenSeatArrangement.objects.filter(
-                    Q(screen_id=pk) & Q(screen__theatre__email=request.auth)
-                )
-                .select_related("screen")
-                .first()
-            )
-            screen_details = seat_arrangements.screen
-            serializer = ScreenSeatArrangementCreateUpdateSerailizer(
-                seat_arrangements, data=request.data, partial=True
-            )
 
-            if serializer.is_valid():
-                instance = serializer.instance
-                instance.seating = serializer.validated_data.get(
-                    "seating", instance.seating
-                )
-                instance.save()
-                Number_of_seats = len(serializer.data.get("seating"))
-                seat_arrangements.is_approved = (
-                    Number_of_seats == screen_details.number_of_seats
-                )
-                seat_arrangements.save()
-                return Response(
-                    {
-                        "msg": "Update successful",
-                        "data": serializer.data,
-                        "is_approved": seat_arrangements.is_approved,
-                    },
-                    status=status.HTTP_200_OK,
-                )
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"errors":"specify the id"}, status=status.HTTP_400_BAD_REQUEST)
-
-
+# @authentication_classes([TheatreAuthentication])
+# @permission_classes([IsAuthenticated])
+class ShowUpdatesToTheatres(APIView):
+    def get(self,request,screen=None,date=None):
+        try:
+            if date and screen:
+                queryset = Shows.objects.filter(
+                    Q(screen__theatre__email='mohammedyassinck@gmail.com') &
+                    Q(show_dates__dates=date) &
+                    Q(screen__screen_number=screen)                         
+                    ).values('show_time__time','language__name','movies__movie_name')
+            else:
+                queryset = Shows.objects.filter(screen__theatre__email='mohammedyassinck@gmail.com'
+                            ).order_by('show_dates__dates'
+                            ).values('id','show_dates__dates','screen__screen_number'
+                            ).distinct()
+            return Response(queryset,status=status.HTTP_200_OK)
+        except:
+            return Response({'error':"Page Not found"},status=status.HTTP_404_NOT_FOUND)
+    

@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from authentications.modules.smtp import send_email
 from django.conf import settings
-from utils.mapping_variables import UPCOMING,PENDING
+from utils.mapping_variables import UPCOMING,PENDING,RELEASED
 from rest_framework.views import APIView
 from django.db.models import Q
 from .pagination import UserProfilePagination
@@ -252,15 +252,12 @@ class MovieDetailsAdding(APIView):
         })
     def get(self, reqeust, pk=None):
         if not pk:
-            movies = MoviesDetails.objects.only("movie_name", "poster")
-            serializer = MovieDetailListSerializer(movies, many=True)
+            queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values('id','movie_name','director')
         else:
-            try:
-                movies = MoviesDetails.objects.get(id=pk)
-            except:
+            queryset = MoviesDetails.objects.filter(id=pk).values().first()
+            if not queryset:
                 return Response({"errors":"Not Available"},status=status.HTTP_404_NOT_FOUND)
-            serializer = MovieDetailsChoiceSerializer(movies)
-        return Response(serializer.data, status=status.HTTP_200_OK,content_type="multipart/formdata")
+        return Response(queryset, status=status.HTTP_200_OK,content_type="multipart/formdata")
 
 
 
@@ -313,3 +310,7 @@ class MovieDetailsAdding(APIView):
                 serializer.save()
                 return Response(serializer.data,status=status.HTTP_200_OK)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
