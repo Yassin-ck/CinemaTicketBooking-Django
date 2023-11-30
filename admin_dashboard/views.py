@@ -54,11 +54,11 @@ class UserProfileViewBYAdmin(APIView):
         }
     )
     def get(self, request):
-        user_profile = UserProfile.objects.select_related("user").order_by("user_id")
-        number_of_users = len(user_profile)
+        queryset = UserProfile.objects.select_related("user").order_by("user_id")
+        number_of_users = len(queryset)
         paginator = UserProfilePagination()
         number_of_page = number_of_users // paginator.page_size
-        result_page = paginator.paginate_queryset(user_profile, request)
+        result_page = paginator.paginate_queryset(queryset, request)
         serializer = UserProfileListSerializer(result_page, many=True, context={"request": request})
         response_data = {
             "user": serializer.data,
@@ -79,8 +79,8 @@ class LocationRequests(APIView):
         }
     )
     def get(self, request):
-        requested_location = RequestLocation.objects.filter(status=PENDING)
-        serializer = RequestedLocationListSerializer(requested_location, many=True)
+        queryset = RequestLocation.objects.filter(status=PENDING)
+        serializer = RequestedLocationListSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -97,8 +97,8 @@ class LocationRequests(APIView):
     )
     def put(self, request, pk=None):
         if pk:
-            location = RequestLocation.objects.get(id=pk)
-            serializer = RequestedLocationCreateUpdateSerializer(location)
+            queryset = RequestLocation.objects.get(id=pk)
+            serializer = RequestedLocationCreateUpdateSerializer(queryset)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -115,16 +115,16 @@ class TheatreOwnerRequest(APIView):
         })
     def get(self, request, pk=None):
         if not pk:
-            details = TheareOwnerDetails.objects.filter(
+            queryset = TheareOwnerDetails.objects.filter(
                 Q(is_verified=True) & Q(is_approved=False)
             ).only("id", "first_name", "email", "phone", "id_number")
-            serializer = TheatreOwnerListSerializer(details, many=True)
+            serializer = TheatreOwnerListSerializer(queryset, many=True)
         else:
             try:
-                details = TheareOwnerDetails.objects.get(id=pk)
+                queryset = TheareOwnerDetails.objects.get(id=pk)
             except:
                 return Response({"errors":"No Such Owner request"},status=status.HTTP_404_NOT_FOUND)
-            serializer = TheatreOwnerListSerializer(details)
+            serializer = TheatreOwnerListSerializer(queryset)
         return Response(serializer.data,status=status.HTTP_200_OK)
         
 
@@ -142,9 +142,9 @@ class TheatreOwnerRequest(APIView):
         })
     def put(self, request, pk=None):
         if pk:
-            details = TheareOwnerDetails.objects.get(id=pk)
+            queryset = TheareOwnerDetails.objects.get(id=pk)
             serializer = TheatrOwnerCreateUpdateSerializer(
-                details, data=request.data, partial=True
+                queryset, data=request.data, partial=True
             )
             if serializer.is_valid():
                 verification = serializer.validated_data.get("is_approved")
@@ -155,7 +155,7 @@ class TheatreOwnerRequest(APIView):
                     Now you can update your theatre details
                     """
                     email_from = settings.EMAIL_HOST_USER
-                    recipient_list = (details.email,)
+                    recipient_list = (queryset.email,)
                     send_email(subject, message, email_from, recipient_list)
                     return Response({"msg": "verified"}, status=status.HTTP_200_OK)
                 else:
@@ -165,7 +165,7 @@ class TheatreOwnerRequest(APIView):
                     Please Contact with our customer service or You can use our message system
                     """
                     email_from = settings.EMAIL_HOST_USER
-                    recipient_list = (details.email,)
+                    recipient_list = (queryset.email,)
                     send_email(subject, message, email_from, recipient_list)
                     return Response({"msg": "Rejected"}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -185,13 +185,13 @@ class TheatreRequest(APIView):
         })
     def get(self, request, pk=None):
         if not pk:
-            details = TheatreDetails.objects.filter(is_approved=False).only(
+            queryset = TheatreDetails.objects.filter(is_approved=False).only(
                 "id", "theatre_name", "address"
             )
-            serializer = TheatreListSerializer(details, many=True)
+            serializer = TheatreListSerializer(queryset, many=True)
         else:
-            details = TheatreDetails.objects.filter(id=pk).select_related("owner")
-            serializer = TheatreListChoiceSerializer(details[0])
+            queryset = TheatreDetails.objects.filter(id=pk).select_related("owner").first()
+            serializer = TheatreListChoiceSerializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -209,9 +209,9 @@ class TheatreRequest(APIView):
         })
     def put(self, request, pk=None):
         if pk:
-            details = TheatreDetails.objects.get(id=pk)
+            queryset = TheatreDetails.objects.get(id=pk)
             serializer = TheatreDetailsCreateUpdateSerializer(
-                details, data=request.data, partial=True
+                queryset, data=request.data, partial=True
             )
             if serializer.is_valid():
                 verification = serializer.validated_data.get("is_approved")
@@ -224,7 +224,7 @@ class TheatreRequest(APIView):
                     Now You can go with you further details ...           
                     """
                     email_from = settings.EMAIL_HOST_USER
-                    recipient_list = (details.email,)
+                    recipient_list = (queryset.email,)
                     send_email(subject, message, email_from, recipient_list)
                     return Response({"msg": "verified"}, status=status.HTTP_200_OK)
                 subject = "Theatre Request Rejected..."
@@ -233,7 +233,7 @@ class TheatreRequest(APIView):
                 Please Contact with our customer service or You can use our message system   
                 """
                 email_from = settings.EMAIL_HOST_USER
-                recipient_list = (details.email,)
+                recipient_list = (queryset.email,)
                 send_email(subject, message, email_from, recipient_list)
                 return Response({"msg": "Rejected"}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -313,4 +313,8 @@ class MovieDetailsAdding(APIView):
 
 
 
-
+class MoviesListing(APIView):
+    def get(self,request):
+        queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values().order_by('-id')[:4]
+        return Response(queryset,status=status.HTTP_200_OK)
+        

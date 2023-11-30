@@ -79,7 +79,7 @@ class CurrentLocation(APIView):
                 place=data["city"],
                 coordinates=point,
             )
-        return Response(data["county"], status=status.HTTP_200_OK)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class EmailAuthView(APIView):
@@ -236,8 +236,8 @@ class UserProfileView(APIView):
             500:"errors"
         })
     def put(self, request):
-        user = UserProfile.objects.get(user_id=request.user.id)
-        serializer = UserProfileListSerializer(user, data=request.data, partial=True)
+        queryset = UserProfile.objects.get(user_id=request.user.id)
+        serializer = UserProfileListSerializer(queryset, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             # print(serializer.data)
@@ -245,8 +245,8 @@ class UserProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
-        user = MyUser.objects.get(id=request.user.id)
-        user.delete()
+        queryset = MyUser.objects.get(id=request.user.id)
+        queryset.delete()
         return Response({"msg": "user deleted ..."}, status=status.HTTP_200_OK)
 
 

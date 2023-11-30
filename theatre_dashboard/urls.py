@@ -25,4 +25,5 @@ urlpatterns = [
     path("screenseatarrange/<int:pk>/",ScreenSeatArrangementDetails.as_view(),name="screenseatarrange"),
     path("showview/",ShowUpdatesToTheatres.as_view(),name="showview"),
     path("showview/<int:screen>/<str:date>/",ShowUpdatesToTheatres.as_view(),name="showviewbydate"),
+    path("showview/<int:pk>/",ShowUpdatesToTheatres.as_view(),name="showupdate"),
 ]

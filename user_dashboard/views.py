@@ -4,7 +4,8 @@ from rest_framework.views import APIView
 from django.db.models import Q , Prefetch , F
 from admin_dashboard.models import MoviesDetails
 from rest_framework import status
-from datetime import timedelta
+from datetime import datetime
+from collections import defaultdict
 from utils.mapping_variables import to_third_day,today, RELEASED, Available_dates
 from rest_framework.permissions import (
     AllowAny,
@@ -64,9 +65,9 @@ class MovieSearching(APIView):
     )
     def get(self, reqeust):
         q = reqeust.GET.get("q")
-        movies = MoviesDetails.objects.filter(Q(movie_name__icontains=q) | Q(director__icontains=q)).values('id','movie_name')
-        if movies:
-            return Response(movies, status=status.HTTP_200_OK)
+        queryset = MoviesDetails.objects.filter(Q(movie_name__icontains=q) | Q(director__icontains=q)).values('id','movie_name')
+        if queryset:
+            return Response(queryset, status=status.HTTP_200_OK)
         return Response({"data":"Not Found"}, status=status.HTTP_404_NOT_FOUND)
 
 
@@ -123,13 +124,27 @@ class MovieSelectionView(APIView):
                 Q_Base &= Q(shows__language__name=q)
             response = self.get_theatre_screen_details(Q_Base,date) 
             return Response(response, status=status.HTTP_200_OK)       
-        movies = MoviesDetails.objects.filter(Q_Base).distinct().values('id', 'movie_name', 'poster', 'director', 'shows__language__name')
-        languages = list(set(data['shows__language__name'] for data in movies))
-        movie_data = [data for data in movies if q == 'all' or data.get('shows__language__name') == q]
+        queryset = MoviesDetails.objects.filter(Q_Base).distinct().values('id', 'movie_name', 'poster', 'director', 'shows__language__name')
+        print(queryset)
+        languages = list(set(data['shows__language__name'] for data in queryset))
+        unique_movies = set() 
+
+        movie_data = []
+        for data in queryset:
+            movie_name = data.get('movie_name')
+            director = data.get('director')
+            movie_director_combination = (movie_name, director)
+
+            if q == 'all' or data.get('shows__language__name') == q:
+                if movie_director_combination not in unique_movies:
+                    unique_movies.add(movie_director_combination)
+                    movie_data.append(data)
+           
         return Response({"movies": movie_data, 'languages': languages}, status=status.HTTP_200_OK)
 
     
     def get_theatre_screen_details(self,Q_Base,date):
+        date = self.date_formatting(date)
         queryset = ScreenDetails.objects.filter(Q_Base).annotate(
             theatre_name=F('theatre__theatre_name'),
             show_time=F('shows__show_time__time'),
@@ -143,21 +158,45 @@ class MovieSelectionView(APIView):
                      ).distinct()
 
         current_screen_data = []
+        grouped_data = defaultdict(list)
         date_data = []
         for screen_details in queryset:
+            key = (screen_details['theatre_name'],screen_details['screen_number'],screen_details['language'])
             if str(screen_details.get('show_dates')) == date:
-                current_screen_data.append(screen_details)
-            if str(screen_details.get('show_dates')) not in date_data:
-                date_data.append(str(screen_details.get('show_dates')))
+                grouped_data[key].append({
+                    'show_time':screen_details['show_time']
+                })
+            formatted_date = datetime.strptime(str(screen_details.get('show_dates')), "%Y-%m-%d").strftime("%b %d %a")
+            
+            if formatted_date not in date_data:
+                date_data.append(formatted_date)
+        for key, items in grouped_data.items():
+            current_screen_data.append({
+                'theatre_name': key[0],
+                'screen_number': key[1],
+                'show_times': items,
+            })
+            
         response_data = {
             "data" : current_screen_data,
             "dates":date_data  
         }
         return response_data
+    
+    def date_formatting(self,date):
+        try:
+            parsed_date = datetime.strptime(date, "%b %d %a")
+            current_year = datetime.now().year
+            parsed_date = parsed_date.replace(year=current_year)
+            date = str(parsed_date)[:10]
+            return date
+        except:
+            return date
 
 
 
     def get_screen_details(self,location ,cinemas,date,screen,movie,times,q=None):
+        date = self.date_formatting(date)
         Q_Base = (
             Q(screen__theatre__theatre_name=cinemas) &
             (Q(screen__theatre__location__place=location) |
@@ -229,7 +268,6 @@ class TheatreSelectionView(APIView):
                     'language',
                     'show_dates'
                     )
-            
             current_screen_data = []
             date_data = []
             for screen_details in queryset:
@@ -246,9 +284,9 @@ class TheatreSelectionView(APIView):
     
     
 
-
 class SingleMovieDetailsView(APIView):
     def get (self,request,movie,id):
-        movies = MoviesDetails.objects.filter(Q(movie_name=movie) & Q(id=id)).values('movie_name','director','poster').first()
-        return Response({'data':movies},status=status.HTTP_200_OK)
+        queryset = MoviesDetails.objects.filter(Q(movie_name=movie) & Q(id=id)).values('movie_name','director','poster').first()
+        return Response({'data':queryset},status=status.HTTP_200_OK)
+        
         

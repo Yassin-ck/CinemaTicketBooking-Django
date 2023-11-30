@@ -52,7 +52,7 @@ class GoogleSocialAuthSerializer(serializers.Serializer):
             email=email,
             name=name,
         )
-
+    
 
 class UserDetailsChoiceSerilaizer(serializers.Serializer):
     email = serializers.EmailField(required=False)

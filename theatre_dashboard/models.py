@@ -94,7 +94,6 @@ class Shows(models.Model):
     
 
 
-
 class ScreenSeatArrangement(models.Model):
     screen = models.OneToOneField(
         ScreenDetails, primary_key=True, on_delete=models.CASCADE

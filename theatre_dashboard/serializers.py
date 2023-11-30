@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from django.db import transaction
+
 from .models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -129,8 +131,61 @@ class ShowDatesChoiceSerializer(serializers.ModelSerializer):
         model = ShowDates
         fields = ("dates",)
         
+
+
+
+class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
+    class Meta:
+        model = Shows
+        fields = (
+            'show_time',
+            'show_dates',
+            'language',
+            'movies',
+            'screen'
+            )   
         
+
+    
+    def create(self, validated_data):
+        show_time = validated_data.get('show_time')
+        show_dates = validated_data.get('show_dates')
+        language = validated_data.get('language')
+        movies = validated_data.get('movies')
+        screen = validated_data.get('screen')
+        try:
+            instance = Shows.objects.create(
+                language = language,
+                movies = movies,
+                screen = screen     
+                )
+            instance.show_dates.add(*show_dates)
+            instance.show_time.add(*show_time)
+            instance.save()   
+        except:
+            raise serializers.ValidationError({'error':"Something Went Wrong..."})
+        return validated_data
         
+
+            
+    def update(self, instance, validated_data):
+        print(validated_data)
+        show_time = validated_data.get('show_time')
+        show_dates = validated_data.get('show_dates')
+        with transaction.atomic():               
+            if 'show_time' in validated_data :
+                instance.show_time.clear()
+                instance.show_time.add(*show_time)
+            if 'show_dates' in validated_data:
+                instance.show_dates.clear()
+                instance.show_dates.add(*show_dates)
+            instance.language = validated_data.get('language', instance.language)
+            instance.movies = validated_data.get('movies', instance.movies)
+            instance.screen = validated_data.get('screen', instance.screen)
+
+            instance.save()
+        return instance
+
 
 class ShowsChoiceSerializer(serializers.ModelSerializer):
     language = LanguageChoiceSerializer()
@@ -191,7 +246,13 @@ class ScreenDetailsChoicesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ScreenDetails
-        fields = ("screen_number", "shows_set", "theatre","row_count",'column_count')
+        fields = (
+            "screen_number",
+            "shows_set", 
+            "theatre",
+            "row_count",
+            "column_count"
+            )
     
     
     

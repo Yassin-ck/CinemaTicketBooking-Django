@@ -7,16 +7,19 @@ from authentications.modules.smtp import send_email
 from django.conf import settings
 from authentications import views
 from django.db.models import Q
+from collections import defaultdict
 import random, math
 from rest_framework.decorators import permission_classes
 from .theatre_auth import TheatreAuthentication
 from rest_framework.decorators import authentication_classes
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from utils.mapping_variables import row_alpha
+from django.db.models import F
 from authentications.serializers import (
     LocationListSerializer,
     RequestedLocationCreateUpdateSerializer,
-    OtpSerilizers
+    OtpSerilizers,
+    EmailSerilaizer
 )
 from .serializers import (
     TheatreDetailsCreateUpdateSerializer,
@@ -25,7 +28,8 @@ from .serializers import (
     ScreenDetailsCreateUpdateSerailizer,
     TheatreListSerializer,
     ScreenSeatArrangementListSerailizer,
-    ScreenSeatArrangementCreateUpdateSerailizer
+    ScreenSeatArrangementCreateUpdateSerailizer,
+    ShowCreateUpdateSerialzer
 )
 from authentications.models import (
     MyUser,
@@ -42,6 +46,7 @@ from .models import (
     ShowTime
 )
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 @permission_classes([IsAuthenticated])
 class TheatreOwnerFormApplication(APIView):
@@ -57,7 +62,7 @@ class TheatreOwnerFormApplication(APIView):
     def post(self, request):
         serializer = TheatrOwnerCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
-            user = TheareOwnerDetails.objects.create(
+            queryset = TheareOwnerDetails.objects.create(
                 user=request.user,
                 first_name=serializer.validated_data.get("first_name"),
                 last_name=serializer.validated_data.get("last_name"),
@@ -70,7 +75,7 @@ class TheatreOwnerFormApplication(APIView):
                 id_number=serializer.validated_data.get("id_number"),
                 address=serializer.validated_data.get("address"),
             )
-            verification_sid = send_sms(user.phone)
+            verification_sid = send_sms(queryset.phone)
             return Response(
                 {"verification_sid": verification_sid, "msg": "Otp Sent Succesfully"},
                 status=status.HTTP_201_CREATED,
@@ -100,12 +105,12 @@ class TheatreOwnerVerification(APIView):
         verify_status = verify_user_code(verification_sid, otp_entered)
         if verify_status is not None and verify_status.status == "approved":
             try:
-                user = TheareOwnerDetails.objects.get(user=request.user)
-                user.is_verified = True
-                user.save()
+                queryset = TheareOwnerDetails.objects.get(user=request.user)
+                queryset.is_verified = True
+                queryset.save()
                 subject = "New Theatre Request"
                 message = "New theatre is requested.. check it out !!!"
-                email_from = user.email
+                email_from = queryset.email
                 recipient_list = (settings.EMAIL_HOST_USER,)
                 send_email(subject, message, email_from, recipient_list)
                 return Response({"msg": "Success"}, status=status.HTTP_200_OK)
@@ -128,7 +133,7 @@ class TheatreRegistration(APIView):
         serializer = TheatreDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             print(serializer.data)
-            theatre = TheatreDetails.objects.create(
+            queryset = TheatreDetails.objects.create(
                 owner=TheareOwnerDetails.objects.get(
                     Q(user=request.user) & Q(is_approved=True)
                 ),
@@ -145,10 +150,10 @@ class TheatreRegistration(APIView):
             )
             subject = "New theatre request...."
             message = "new theatre request. check it out..."
-            email_from = theatre.email
+            email_from = queryset.email
             recipient_list = (settings.EMAIL_HOST_USER,)
             send_email(subject, message, email_from, recipient_list)
-            token = views.get_tokens_for_user(theatre.owner.user, theatre.email)
+            token = views.get_tokens_for_user(queryset.owner.user, queryset.email)
             return Response({"msg": "success",'token':token}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -158,27 +163,29 @@ class TheatreLoginRequest(APIView):
     @swagger_auto_schema(
         tags=["Theatres"],
         operation_description="TheatreLogin interface",
-        request_body=TheatreDetailsCreateUpdateSerializer,
+        request_body=EmailSerilaizer,
         responses={
             201:TheatreDetailsCreateUpdateSerializer,
             400:"bad request"
         })
     
     def post(self, request):
-        email = request.data.get("email")
-        try:
-            otp = math.floor(random.randint(100000, 999999))
-            subject = "Otp Verification"
-            message = f"Your Otp for login : {otp}"
-            email_from = settings.EMAIL_HOST_USER
-            recipient_list = (email,)
-            send_email(subject, message, email_from, recipient_list)
-            response_data = {"email": email, "otp": otp, "msg": "Check Email......"}
-            return Response(response_data, status=status.HTTP_200_OK)
-        except:
-            return Response(
-                {"msg": "Something Went Wrong..."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = EmailSerilaizer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get("email")
+            try:
+                otp = math.floor(random.randint(100000, 999999))
+                subject = "Otp Verification"
+                message = f"Your Otp for login : {otp}"
+                email_from = settings.EMAIL_HOST_USER
+                recipient_list = (email,)
+                send_email(subject, message, email_from, recipient_list)
+                response_data = {"email": email, "otp": otp, "msg": "Check Email......"}
+                return Response(response_data, status=status.HTTP_200_OK)
+            except:
+                return Response(
+                    {"msg": "Something Went Wrong..."}, status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 @permission_classes([IsAuthenticated])
@@ -193,13 +200,13 @@ class TheatreLoginVerify(APIView):
         })
     def post(self, request):
         print(request.data)
-        otp = request.data.get("otp")
-        otp_entered = request.data.get("otp_entered")
-        email = request.data.get("email")
+
         serializer = OtpSerilizers(data=request.data)
-        print(otp)
-        print(otp_entered)
+
         if serializer.is_valid():
+            otp = serializer.validated_data.get('otp')
+            otp_entered = serializer.validated_data.get('otp_entered')
+            email = serializer.validated_data.get('email')
             if int(otp) == int(otp_entered):
                 try:
                     queryset= TheatreDetails.objects.filter(
@@ -207,8 +214,10 @@ class TheatreLoginVerify(APIView):
                         Q(is_approved=True)).prefetch_related(
                             'screen_details__screenseatarrangement'
                             ).first()
-                    token = views.get_tokens_for_user(queryset.owner.user, email)
-                    print(token)
+                    if queryset:
+                        token = views.get_tokens_for_user(queryset.owner.user, email)
+                    else:
+                        return Response({"msg":"You Are Not Authorized"},status=status.HTTP_401_UNAUTHORIZED)  
                     datas =  [i.id for i in queryset.screen_details.all() if i.is_approved == False ]
                     if  not datas:
                         return Response({"msg": "loginned", "token": token}, status=status.HTTP_200_OK)
@@ -292,9 +301,9 @@ class TheatreDetailsView(APIView):
             404:"not found"
         })
     def get(self, request):
-        theatre = TheatreDetails.objects.filter(owner__user=request.user)
-        if theatre:
-            serializer = TheatreListSerializer(theatre, many=True)
+        queryset = TheatreDetails.objects.filter(owner__user=request.user)
+        if queryset:
+            serializer = TheatreListSerializer(queryset, many=True)
             return Response({"theatre": serializer.data},status=status.HTTP_200_OK)
         return Response({"error":"Something Went Wrong"},status=status.HTTP_404_NOT_FOUND)
 
@@ -310,10 +319,10 @@ class ScreenDetailsForm(APIView):
         })
     def get(self, request, pk=None):
         if pk:
-            screen_details = self.get_object(request,pk)
+            queryset = self.get_object(request,pk)
         else:
-            screen_details = ScreenDetails.objects.filter(theatre__email=request.auth).values()
-        return Response(screen_details, status=status.HTTP_200_OK)
+            queryset = ScreenDetails.objects.filter(theatre__email=request.auth).values()
+        return Response(queryset, status=status.HTTP_200_OK)
     
     
     def get_object(self,request,pk):
@@ -333,15 +342,15 @@ class ScreenDetailsForm(APIView):
     def put(self, request, pk=None):
         print(request.data)
         if pk is not None:
-            screen_detail = ScreenDetails.objects.filter(
+            queryset = ScreenDetails.objects.filter(
                 Q(id=pk) & Q(theatre__email=request.auth)
             ).select_related('theatre').first()
             serializer = ScreenDetailsCreateUpdateSerailizer(
-                screen_detail, data=request.data, partial=True
+                queryset, data=request.data, partial=True
             )
             if serializer.is_valid():
-                screen_detail.theatre.is_verified = True
-                screen_detail.save()
+                queryset.theatre.is_verified = True
+                queryset.save()
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -389,23 +398,72 @@ class ScreenSeatArrangementDetails(APIView):
 
 
 
-# @authentication_classes([TheatreAuthentication])
-# @permission_classes([IsAuthenticated])
+@authentication_classes([TheatreAuthentication])
+@permission_classes([IsAuthenticated])
 class ShowUpdatesToTheatres(APIView):
+    @swagger_auto_schema(
+        tags=["ShowsUpdating"],
+        operation_description="This is the view for showing all the shows",
+        responses={
+            200: openapi.Response(
+                description="Successful response",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'show_time__time': openapi.Schema(type=openapi.TYPE_STRING),
+                            'language__name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'moies__movie_name': openapi.Schema(type=openapi.TYPE_STRING),
+                    })))})
     def get(self,request,screen=None,date=None):
-        try:
-            if date and screen:
-                queryset = Shows.objects.filter(
-                    Q(screen__theatre__email='mohammedyassinck@gmail.com') &
-                    Q(show_dates__dates=date) &
-                    Q(screen__screen_number=screen)                         
-                    ).values('show_time__time','language__name','movies__movie_name')
-            else:
-                queryset = Shows.objects.filter(screen__theatre__email='mohammedyassinck@gmail.com'
-                            ).order_by('show_dates__dates'
-                            ).values('id','show_dates__dates','screen__screen_number'
-                            ).distinct()
+        if date and screen:
+            queryset = Shows.objects.filter(
+                Q(screen__theatre__email=request.auth) &
+                Q(show_dates__dates=date) &
+                Q(screen__screen_number=screen)                         
+                ).values('id',time=F('show_time__time'),languages=F('language__name'),movie=F('movies__movie_name'))
+            # print(queryset)
             return Response(queryset,status=status.HTTP_200_OK)
-        except:
-            return Response({'error':"Page Not found"},status=status.HTTP_404_NOT_FOUND)
+        else:
+            queryset = Shows.objects.filter(screen__theatre__email=request.auth).order_by('show_dates__dates').values(
+                'show_dates__dates',
+                'screen__screen_number'
+                ).distinct().order_by('-show_dates__dates')
+            # print(queryset)
+            result_dict = defaultdict(list)
+
+            for entry in queryset:
+                screen_number = entry['screen__screen_number']
+                show_date = entry['show_dates__dates']
+                result_dict[screen_number].append(show_date)
+            response_data = [{'screen_number': key, 'dates': value} for key, value in result_dict.items()]
+
+        return Response(response_data,status=status.HTTP_200_OK)
+        
+      
+    
+    def post(self,request):
+        serializer = ShowCreateUpdateSerialzer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+    def put(self,request,pk=None):
+        try:
+            queryset = Shows.objects.get(
+                Q(id=pk) & 
+                Q(screen__theatre__email=request.auth)
+                )
+        except Shows.DoesNotExist:
+            return Response({"msg":"Not Permitted..."})
+        serializer = ShowCreateUpdateSerialzer(queryset,data=request.data,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
