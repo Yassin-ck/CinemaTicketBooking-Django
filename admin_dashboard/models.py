@@ -25,3 +25,6 @@ class MoviesDetails(models.Model):
 
     def __str__(self) -> str:
         return f"{self.movie_name}"
+    
+
+

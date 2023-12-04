@@ -54,32 +54,35 @@ class CurrentLocation(APIView):
         operation_description=" current location of user",    
     )
     def get(self, request):
-        client_ip, is_routable = get_client_ip(request)
-        if client_ip is None:
-            client_ip = "0.0.0.0"
-        else:
-            if is_routable:
-                ip_type = "public"
+        try:
+            client_ip, is_routable = get_client_ip(request)
+            if client_ip is None:
+                client_ip = "0.0.0.0"
             else:
-                ip_type = "private"
-        print(ip_type, client_ip)
-        auth = settings.IP_AUTH
-        ip_address = "103.70.197.189"  # for checking
-        url = f"https://api.ipfind.com/?auth={auth}&ip={ip_address}"
-        response = urllib.request.urlopen(url)
-        data = json.loads(response.read())
-        data["client_ip"] = client_ip
-        data["ip_type"] = ip_type
-        point = Point(data["longitude"], data["latitude"])
-        if not Location.objects.filter(coordinates=point).exists():
-            Location.objects.create(
-                country=data["country"],
-                state=data["region"],
-                district=data["county"],
-                place=data["city"],
-                coordinates=point,
-            )
-        return Response(data, status=status.HTTP_200_OK)
+                if is_routable:
+                    ip_type = "public"
+                else:
+                    ip_type = "private"
+            print(ip_type, client_ip)
+            auth = settings.IP_AUTH
+            ip_address = "103.70.197.189"  # for checking
+            url = f"https://api.ipfind.com/?auth={auth}&ip={ip_address}"
+            response = urllib.request.urlopen(url)
+            data = json.loads(response.read())
+            data["client_ip"] = client_ip
+            data["ip_type"] = ip_type
+            point = Point(data["longitude"], data["latitude"])
+            if not Location.objects.filter(coordinates=point).exists():
+                Location.objects.create(
+                    country=data["country"],
+                    state=data["region"],
+                    district=data["county"],
+                    place=data["city"],
+                    coordinates=point,
+                )
+            return Response(data, status=status.HTTP_200_OK)
+        except:
+            return Response({"error":"Something Went Wrong.."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class EmailAuthView(APIView):
