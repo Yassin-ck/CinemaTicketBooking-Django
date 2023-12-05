@@ -26,9 +26,10 @@ def create_Seat_for_Screens(sender, instance, created, *args, **kwargs):
 
 
 
-@receiver(post_save, sender=Shows)
-def create_booking_details_instance(sender,instance,created,*args,**kwargs):
-    if created:
-        BookingDetails.objects.create(
-            
-        )
+# @receiver(post_save, sender=Shows)
+# def create_booking_details_instance(sender,instance,created,*args,**kwargs):
+#     if created:
+#         for i in range(instance.screen.theatre.num_of_screens):
+#             BookingDetails.objects.create(
+#                 show = instance,
+#             )

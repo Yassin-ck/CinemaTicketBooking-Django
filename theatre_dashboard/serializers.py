@@ -169,7 +169,6 @@ class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
 
             
     def update(self, instance, validated_data):
-        print(validated_data)
         show_time = validated_data.get('show_time')
         show_dates = validated_data.get('show_dates')
         with transaction.atomic():               
@@ -182,7 +181,7 @@ class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
             instance.language = validated_data.get('language', instance.language)
             instance.movies = validated_data.get('movies', instance.movies)
             instance.screen = validated_data.get('screen', instance.screen)
-
+        
             instance.save()
         return instance
 
