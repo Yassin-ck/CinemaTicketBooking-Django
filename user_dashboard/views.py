@@ -5,6 +5,7 @@ from django.db.models import Q , Prefetch , F
 from admin_dashboard.models import MoviesDetails
 from rest_framework import status
 from datetime import datetime
+from rest_framework.permissions import IsAuthenticated
 from collections import defaultdict
 from utils.mapping_variables import to_third_day,today, RELEASED, Available_dates
 from rest_framework.permissions import (
@@ -15,11 +16,15 @@ from admin_dashboard.models import (
     MoviesDetails
     )
 from theatre_dashboard.models import (
+    ShowDates,
+    ShowTime,
     TheatreDetails,
     ScreenDetails,
     ScreenSeatArrangement,
     Shows
-
+)
+from .serializers import (
+    TicketBookingCreateUpdateSerializer,
 )
 from admin_dashboard.serializers import (
     MovieDetailListSerializer,
@@ -29,6 +34,10 @@ from theatre_dashboard.serializers import (
     ShowDatesChoiceSerializer
     
 )
+from .models import (
+    TicketBooking,
+    BookingDetails,
+    )
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
@@ -327,5 +336,27 @@ class SingleMovieDetailsView(APIView):
         serializer = MovieDetailListSerializer(queryset)
         return Response({'data':serializer.data},status=status.HTTP_200_OK)
         
+        
+@permission_classes([IsAuthenticated])
+class TicketBookingApi(APIView):
+    def post(self,request):
+        print(request.data)
+        time_ = request.data.get("time")
+        date_ = request.data.get("date")
+        date = ShowDates.objects.get(dates=date_)
+        time = ShowTime.objects.get(time=time_)
+        request.data["time"] = time.id
+        request.data["date"] = date.id
+        print(request.data)
+        serializer = TicketBookingCreateUpdateSerializer(data=request.data,context={"request":request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"msg":"ticket added..."},status=status.HTTP_201_CREATED)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self,request,):
+
+        quesryset = TicketBooking.objects.filter(user=request.user).order_by("booking_date").first()
+        serializer = TicketBookingCreateUpdateSerializer(quesryset,data=request.data)
         
         
