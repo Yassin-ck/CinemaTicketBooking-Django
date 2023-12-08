@@ -246,3 +246,23 @@ SWAGGER_SETTINGS = {
         },
     }
 }
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://localhost:6379/', 
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+
+
+#stripe
+
+STRIPE_SECRET_KEY = 'sk_test_51OL0cSSCSC2S0RMY46ur26vAegNrd5ePX5gMbM6NxtlQB2TwCe4iL3cWyC86FzspSVBtxVBqHdIe6bUmT7nXlYpf00QHVMmD1G'
+SITE_URL = "http://localhost:5173/"

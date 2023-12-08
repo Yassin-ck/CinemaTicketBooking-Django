@@ -1,3 +1,4 @@
+from enum import unique
 from django.contrib.gis.db import models
 from authentications.models import MyUser, Location
 from admin_dashboard.models import  (
@@ -91,6 +92,9 @@ class Shows(models.Model):
 
     def __str__(self) -> str:
         return  f"{self.id}"
+    
+    class Meta:
+        unique_together = ('language','screen','movies')
     
 
 

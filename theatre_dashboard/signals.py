@@ -1,8 +1,6 @@
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-from user_dashboard.models import (
-    BookingDetails,
-    )
+
 from .models import (
     ScreenDetails,
     TheatreDetails,
@@ -27,12 +25,5 @@ def create_Seat_for_Screens(sender, instance, created, *args, **kwargs):
 
 
 
-@receiver(post_save, sender=Shows)
-def create_booking_details_instance(sender, instance, created, *args, **kwargs):
-    if created:
-        BookingDetails.objects.get_or_create(
-            show=instance,
-            theatre_screen=instance.screen
-        )
 
   

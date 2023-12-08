@@ -21,10 +21,7 @@ from authentications.serializers import (
     OtpSerilizers,
     EmailSerilaizer
 )
-from user_dashboard.models import (
- 
-    BookingDetails
-    )
+
 from .serializers import (
     TheatreDetailsCreateUpdateSerializer,
     TheatrOwnerCreateUpdateSerializer,
@@ -428,14 +425,12 @@ class ShowUpdatesToTheatres(APIView):
                 Q(show_dates__dates=date) &
                 Q(screen__screen_number=screen)                         
                 ).values('id',time=F('show_time__time'),languages=F('language__name'),movie=F('movies__movie_name'))
-            # print(queryset)
             return Response(queryset,status=status.HTTP_200_OK)
         else:
             queryset = Shows.objects.filter(screen__theatre__email=request.auth).order_by('show_dates__dates').values(
                 'show_dates__dates',
                 'screen__screen_number'
                 ).distinct().order_by('-show_dates__dates')
-            # print(queryset)
             result_dict = defaultdict(list)
 
             for entry in queryset:
@@ -455,7 +450,7 @@ class ShowUpdatesToTheatres(APIView):
             return Response(serializer.data,status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
-    
+
     
     def put(self,request,pk=None):
         try:

@@ -4,7 +4,8 @@ from .views import (
     MovieSelectionView,
     TheatreSelectionView,
     SingleMovieDetailsView,
-    TicketBookingApi
+    TicketCachingView,
+    StripeCheckoutView
 )
 
 urlpatterns = [
@@ -12,5 +13,6 @@ urlpatterns = [
     path("movieslist/", MovieSelectionView.as_view(), name="movieslist"),
     path("theatrelist/", TheatreSelectionView.as_view(), name="theatrelist"),
     path('moviedetailsview/<str:movie>/<int:id>/',SingleMovieDetailsView.as_view(),name='moviesdetialsview'),
-    path('ticketbooking/',TicketBookingApi.as_view(),name="ticketbooking")
+    path('ticketcaching/',TicketCachingView.as_view(),name="ticketcaching"),
+    path('createcheckoutsession/',StripeCheckoutView.as_view(),name='createcheckoutsession')
 ]

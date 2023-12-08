@@ -1,6 +1,7 @@
+from signal import raise_signal
 from rest_framework import serializers
 from django.db import transaction
-
+from django.db.models import Q
 from .models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -153,6 +154,8 @@ class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
         language = validated_data.get('language')
         movies = validated_data.get('movies')
         screen = validated_data.get('screen')
+        if Shows.objects.filter(Q(show_dates__in=show_dates) & Q(show_time__in=show_time) & Q(screen_id=screen)).exists():
+            raise serializers.ValidationError('Already exist')
         try:
             instance = Shows.objects.create(
                 language = language,
@@ -170,7 +173,12 @@ class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
             
     def update(self, instance, validated_data):
         show_time = validated_data.get('show_time')
-        show_dates = validated_data.get('show_dates')
+        show_dates = validated_data.get('show_dates') 
+        date_data = instance.show_dates.all()
+        for i in date_data:
+            if i not in show_dates:
+                raise serializers.ValidationError("You can't remove date already added")
+        
         with transaction.atomic():               
             if 'show_time' in validated_data :
                 instance.show_time.clear()
@@ -181,8 +189,16 @@ class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
             instance.language = validated_data.get('language', instance.language)
             instance.movies = validated_data.get('movies', instance.movies)
             instance.screen = validated_data.get('screen', instance.screen)
-        
             instance.save()
+            date_data = [i.id for i in instance.show_dates.all()]
+            time_data = [i.id for i in instance.show_time.all()]
+            if Shows.objects.exclude(id=instance.id).filter(
+                    Q(screen=instance.screen) & 
+                    Q(show_dates__in=date_data) & 
+                    Q(show_time__in=time_data)
+                    ).exists():
+                transaction.set_rollback(True)
+                raise serializers.ValidationError('shows with desired time and date already exist')
         return instance
 
 
