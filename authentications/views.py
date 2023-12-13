@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import permission_classes
 from rest_framework import status
 from ipware import get_client_ip
+from django.core.cache import cache
 from django.contrib.gis.geos import Point
 from authentications.modules.smtp import send_email
 import urllib, json
@@ -10,8 +11,12 @@ from django.conf import settings
 from threading import Thread
 from authentications.modules.utils import send_sms, verify_user_code  # twilio
 import random, math
-from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
+from utils.mapping_variables import (
+    CACHE_PREFIX_EMAIL_AUTHENTICATION,
+    CACHE_PREFIX_EMAIL_UPDATION,
+    CACHE_PREFIX_MOBILE_UPDATION
+    )
 from rest_framework.permissions import (
     IsAuthenticated,
 )
@@ -29,6 +34,8 @@ from .serializers import (
     GoogleSocialAuthSerializer,
     OtpSerilizers
 )
+
+
 
 
 # JWTToken
@@ -109,7 +116,8 @@ class EmailAuthView(APIView):
         )
         email_thread.start()   
         response_data = {"email": email, "otp": otp}
-        return Response(response_data, status=status.HTTP_200_OK)
+        cache.set(f"{CACHE_PREFIX_EMAIL_AUTHENTICATION}_{email}",response_data,30)
+        return Response({"msg":"chaeck your email...."}, status=status.HTTP_200_OK)
 
 
 
@@ -151,6 +159,7 @@ class EmailUpdateView(APIView):
         )
         email_thread.start()
         response_data = {"email": email, "otp": otp}
+        cache.set(f"{CACHE_PREFIX_EMAIL_UPDATION}_{email}",response_data,30)
         return Response(response_data, status=status.HTTP_200_OK)
 
 
@@ -167,17 +176,22 @@ class EmailAuthVerification(APIView):
             500:'errors'
         })
     def post(self, request):
-        otp = request.data.get("otp")
-        email = request.data.get("email")
-        otp_entered = request.data.get("otp_entered")
-        serializer = OtpSerilizers(data=request.data)
-        if serializer.is_valid():
-            if int(otp) == int(otp_entered):
-                user = MyUser.objects.get_or_create(email=email)
-                token = get_tokens_for_user(user[0])
-                return Response({"token": token}, status=status.HTTP_200_OK)
-            return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        email_enterd = request.data.get('email')
+        cached_auth_data = cache.get(f"{CACHE_PREFIX_EMAIL_AUTHENTICATION}_{email_enterd}")
+        if cached_auth_data is not None:
+            otp = cached_auth_data.get('otp')
+            email = cached_auth_data.get('email')
+            otp_entered = request.data.get("otp_entered")
+            serializer = OtpSerilizers(data=request.data)
+            if serializer.is_valid():
+                if int(otp) == int(otp_entered):
+                    user = MyUser.objects.get_or_create(email=email)
+                    token = get_tokens_for_user(user[0])
+                    return Response({"token": token}, status=status.HTTP_200_OK)
+                return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"msg":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 
 
@@ -193,18 +207,22 @@ class EmailUpdateVerification(APIView):
             500:'errors'
         })
     def post(self, request):
-        otp = request.data.get("otp")
-        email = request.data.get("email")
-        otp_entered = request.data.get("otp_entered")
-        serializer = OtpSerilizers(data=request.data)
-        if serializer.is_valid():
-            if int(otp) == int(otp_entered):
-                user = request.user
-                user.email = email
-                user.save()
-                return Response({"msg": "Email Updated Succesfully"})
-            return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        email_enterd = request.data.get('email')
+        cached_update_data = cache.get(f"{CACHE_PREFIX_EMAIL_UPDATION}_{email_enterd}")
+        if cached_update_data is not None:
+            otp = cached_update_data.get("otp")
+            email = cached_update_data.get("email")
+            otp_entered = request.data.get("otp_entered")
+            serializer = OtpSerilizers(data=request.data)
+            if serializer.is_valid():
+                if int(otp) == int(otp_entered):
+                    user = request.user
+                    user.email = email
+                    user.save()
+                    return Response({"msg": "Email Updated Succesfully"})
+                return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"msg":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticated])
@@ -283,16 +301,14 @@ class MobilePhoneUpdate(APIView):
         }
     )
     def post(self, request):
-        print(request.data, "kokona")
         serializer = UserProfilePhoneSerializer(data=request.data)
         if serializer.is_valid():
-            print(serializer.data, "kkona")
             phone = serializer.validated_data.get("phone")
 
             verification_sid = send_sms(phone)
-            print(verification_sid, "kona")
             if verification_sid is not None:
-                return Response({"sid": verification_sid}, status=status.HTTP_200_OK)
+                cache.set(f"{CACHE_PREFIX_MOBILE_UPDATION}_{phone}",verification_sid,30)
+                return Response({"msg": "we send a otp verification number to the phone number.c0nfirm that"}, status=status.HTTP_200_OK)
             return Response(
                 {"msg": "Cant send otp!!!"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -302,10 +318,9 @@ class MobilePhoneUpdate(APIView):
 # OTPVerification
 @permission_classes([IsAuthenticated])
 class OtpVerification(APIView):
-    
-        
+         
     @swagger_auto_schema(
-        operation_description="Enter otp in the phone here, Only input the the verification_sid and the otp , Ignore Email and otp_enteref",
+        operation_description="Enter otp in the phone here, Only input the the verification_sid and the otp",
         tags=['ProfileUpdation'],
         request_body=OtpSerilizers,
         responses={
@@ -315,24 +330,33 @@ class OtpVerification(APIView):
         }
     )
     def post(self, request):
-        otp = request.data.get("otp")
-        verification_sid = request.data.get("verification_sid")
-        serializer = OtpSerilizers(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            verification_check = verify_user_code(verification_sid, otp)
-        except:
-            return Response({"msg": "Something Went Wrong..."})
-        if verification_check.status == "approved":
-            user = request.user.userprofile
-            user.phone = verification_check.to
-            user.save()
+        phone = request.data.get('phone')
+        verification_sid = cache.get(f"{CACHE_PREFIX_MOBILE_UPDATION}_{phone}")
+        print(verification_sid)
+        print(type(verification_sid))
+        if verification_sid is not None:     
+            otp_enterd = request.data.get("otp_enterd")
+            print(otp_enterd)
+            serializer = OtpSerilizers(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            try:
+                verification_check = verify_user_code(verification_sid, otp_enterd)
+            except:
+                return Response({"msg": "Something Went Wrong..."})
+            if verification_check.status == "approved":
+                user = request.user.userprofile
+                user.phone = verification_check.to
+                user.save()
 
-            response_data = {
-                "msg": "Success",
-            }
-            return Response(response_data)
+                response_data = {
+                    "msg": "Success",
+                }
+                return Response(response_data)
+            return Response(
+                {"msg": "Something Went Wrong..."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response(
             {"msg": "Something Went Wrong..."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=status.HTTP_400_BAD_REQUEST,
         )

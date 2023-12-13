@@ -154,7 +154,10 @@ class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
         language = validated_data.get('language')
         movies = validated_data.get('movies')
         screen = validated_data.get('screen')
-        if Shows.objects.filter(Q(show_dates__in=show_dates) & Q(show_time__in=show_time) & Q(screen_id=screen)).exists():
+        if Shows.objects.filter(
+            Q(show_dates__in=show_dates) & 
+            Q(show_time__in=show_time) & 
+            Q(screen_id=screen)).exists():
             raise serializers.ValidationError('Already exist')
         try:
             instance = Shows.objects.create(
@@ -293,6 +296,4 @@ class ScreenSeatArrangementChoiceSerailizer(serializers.ModelSerializer):
             "seating",
             "screen"
             )
-
-
-
+         

@@ -1,4 +1,3 @@
-from enum import unique
 from django.contrib.gis.db import models
 from authentications.models import MyUser, Location
 from admin_dashboard.models import  (
@@ -6,7 +5,6 @@ from admin_dashboard.models import  (
     Languages
     )
 
-# Create your models here.
 
 
 class TheareOwnerDetails(models.Model):
@@ -73,6 +71,7 @@ class ScreenDetails(models.Model):
     number_of_seats = models.IntegerField(null=True, blank=True)
     row_count = models.IntegerField(null=True, blank=True)
     column_count = models.IntegerField(null=True, blank=True)
+    ticket_rate = models.IntegerField()
     is_approved = models.BooleanField(default=False)
 
     def __str__(self) -> str:

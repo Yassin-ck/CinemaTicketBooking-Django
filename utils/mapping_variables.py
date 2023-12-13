@@ -39,7 +39,11 @@ PENDING = "PENDING"
 RELEASED = "RELEASED"
  
 Available_dates = (str(today),str(today+timedelta(days=1)),str(today+timedelta(days=2)),str(to_third_day))
-CACHE_PREFIX = "ticket_booking_api"
+CACHE_PREFIX_TICKET_BOOKING = "ticket_booking_api"
 CACHE_TIME = 60 * 10
 CACHED = "b"
 BOOKED ="w"
+PROCESSING = "processing"
+CACHE_PREFIX_EMAIL_AUTHENTICATION = "email_authentication_cache"
+CACHE_PREFIX_EMAIL_UPDATION = "email_updation_cache"
+CACHE_PREFIX_MOBILE_UPDATION = "mobile_updation_cache"

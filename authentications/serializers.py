@@ -147,7 +147,4 @@ class RequestedLocationCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class OtpSerilizers(serializers.Serializer):
-    otp = serializers.CharField()
-    email = serializers.EmailField(required=False)
-    verification_sid = serializers.CharField(required=False)
     otp_entered = serializers.CharField(required=False)

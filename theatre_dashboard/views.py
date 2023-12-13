@@ -29,7 +29,6 @@ from .serializers import (
     ScreenDetailsCreateUpdateSerailizer,
     TheatreListSerializer,
     ScreenSeatArrangementListSerailizer,
-    ScreenSeatArrangementCreateUpdateSerailizer,
     ShowCreateUpdateSerialzer
 )
 from authentications.models import (
@@ -43,8 +42,6 @@ from .models import (
     ScreenDetails,
     ScreenSeatArrangement,
     Shows,
-    ShowDates,
-    ShowTime
 )
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -417,7 +414,12 @@ class ShowUpdatesToTheatres(APIView):
                             'show_time__time': openapi.Schema(type=openapi.TYPE_STRING),
                             'language__name': openapi.Schema(type=openapi.TYPE_STRING),
                             'moies__movie_name': openapi.Schema(type=openapi.TYPE_STRING),
-                    })))})
+                                    }
+                                )
+                            )
+                        )
+                    }
+                )
     def get(self,request,screen=None,date=None):
         if date and screen:
             queryset = Shows.objects.filter(

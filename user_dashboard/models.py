@@ -18,4 +18,9 @@ class TicketBooking(models.Model):
     user = models.ForeignKey(MyUser,on_delete=models.CASCADE,null=True,blank=True)
     tickets = models.JSONField()
     booking_date = models.DateTimeField(auto_now_add=True)
+    amount_paid = models.CharField(max_length=10)
+    payment_id = models.CharField(max_length=255)
     
+
+    class Meta:
+        unique_together = ('show','time','date','tickets')

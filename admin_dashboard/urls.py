@@ -4,7 +4,8 @@ from .views import (
     TheatreOwnerRequest,
     TheatreRequest,
     MovieDetailsAdding,
-    MoviesListing
+    MoviesListing,
+    send_mail_to_all_users,
 )
 
 urlpatterns = [
@@ -16,4 +17,6 @@ urlpatterns = [
     path("moviedetails/", MovieDetailsAdding.as_view(), name="moviedetails"),
     path("moviedetails/<int:pk>/", MovieDetailsAdding.as_view(), name="moviedetailssingle"),
     path("movielist/", MoviesListing.as_view(), name="movielist"),
+    path('sendmail/', send_mail_to_all_users,name="send_mail_to_all_users"),
+
 ]

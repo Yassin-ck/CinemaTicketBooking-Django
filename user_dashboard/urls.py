@@ -1,11 +1,14 @@
 from django.urls import path
 from .views import (
+    BookedView,
     MovieSearching,
     MovieSelectionView,
     TheatreSelectionView,
     SingleMovieDetailsView,
     TicketCachingView,
-    StripeCheckoutView
+    StripeCheckoutView,
+    TicketBookingApi,
+    BookedView,
 )
 
 urlpatterns = [
@@ -14,5 +17,7 @@ urlpatterns = [
     path("theatrelist/", TheatreSelectionView.as_view(), name="theatrelist"),
     path('moviedetailsview/<str:movie>/<int:id>/',SingleMovieDetailsView.as_view(),name='moviesdetialsview'),
     path('ticketcaching/',TicketCachingView.as_view(),name="ticketcaching"),
-    path('createcheckoutsession/',StripeCheckoutView.as_view(),name='createcheckoutsession')
+    path('ticketbooking/',TicketBookingApi.as_view(),name="ticketbooking"),
+    path('createcheckoutsession/',StripeCheckoutView.as_view(),name='createcheckoutsession'),
+    path('bookedticketview/',BookedView.as_view(),name='bookedticketview')
 ]

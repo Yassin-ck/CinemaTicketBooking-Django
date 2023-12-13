@@ -4,10 +4,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from authentications.modules.smtp import send_email
 from django.conf import settings
-from utils.mapping_variables import UPCOMING,PENDING,RELEASED
 from rest_framework.views import APIView
 from django.db.models import Q
 from .pagination import UserProfilePagination
+from utils.mapping_variables import (
+    UPCOMING,
+    PENDING,
+    RELEASED,
+    )
 from theatre_dashboard.models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -28,19 +32,29 @@ from authentications.serializers import(
 from .serializers import (
     MovieDetailListSerializer,
     MovieDetailsCreateUpdateSerializer,
-    MovieDetailsChoiceSerializer
 )
 from authentications.models import (
     UserProfile,
-    RequestLocation
+    RequestLocation,
     )
 from .models import (
     MoviesDetails,
-    Languages
     )
+#swagger
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+#celery
+from .tasks import send_mail_func
+from django.http import HttpResponse
+
+
+
+
+#sending mail through celery
+def send_mail_to_all_users(request):
+    send_mail_func.delay()
+    return HttpResponse("Email has been Sent Successfully")
 
 
 @permission_classes([IsAdminUser])
@@ -54,7 +68,7 @@ class UserProfileViewBYAdmin(APIView):
         }
     )
     def get(self, request):
-        queryset = UserProfile.objects.select_related("user").order_by("user_id")
+        queryset = UserProfile.objects.select_related("user").order_by("user__username")
         number_of_users = len(queryset)
         paginator = UserProfilePagination()
         number_of_page = number_of_users // paginator.page_size
@@ -282,6 +296,7 @@ class MovieDetailsAdding(APIView):
                 director=serializer.validated_data.get("director"),
                 status=UPCOMING,
             )
+            send_mail_to_all_users(request)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -318,3 +333,5 @@ class MoviesListing(APIView):
         queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values().order_by('-id')[:4]
         return Response(queryset,status=status.HTTP_200_OK)
         
+
+

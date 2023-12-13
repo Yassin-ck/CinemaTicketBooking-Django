@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "theatre_dashboard",
     "user_dashboard",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -265,4 +267,18 @@ CACHES = {
 #stripe
 
 STRIPE_SECRET_KEY = 'sk_test_51OL0cSSCSC2S0RMY46ur26vAegNrd5ePX5gMbM6NxtlQB2TwCe4iL3cWyC86FzspSVBtxVBqHdIe6bUmT7nXlYpf00QHVMmD1G'
-SITE_URL = "http://localhost:5173/"
+SITE_URL = "http://localhost:5173"
+
+#celery
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERAILIZER = 'json'
+
+#for storing result
+CELERY_RESULT_BACKEND = "django-db"
+
+#celery beat settings
+CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler'
