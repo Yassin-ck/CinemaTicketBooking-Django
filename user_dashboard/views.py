@@ -509,8 +509,10 @@ class TicketBookingApi(APIView):
         if session_id:
             data = stripe.checkout.Session.retrieve(session_id)
             cached_ticket_data = cache.get(f"{CACHE_PREFIX_TICKET_DETAILS}_{data['customer_details']['email']}")
-            if cached_ticket_data is not None:
+            if cached_data is None and cached_ticket_data is not None:
                 return Response(cached_ticket_data,status=status.HTTP_200_OK)
+            elif cached_data is None and cached_ticket_data is None:
+                return Response({"msg":"session cleared..."},status=status.HTTP_400_BAD_REQUEST)
             key = data['metadata']['cache_id']
             cached_data = cache.get(key)
             time = cached_data['time']
