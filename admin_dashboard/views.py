@@ -38,6 +38,7 @@ from authentications.models import (
     RequestLocation,
     )
 from .models import (
+    Languages,
     MoviesDetails,
     )
 #swagger
@@ -289,7 +290,6 @@ class MovieDetailsAdding(APIView):
         print(request.data)
         serializer = MovieDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
-            print(serializer.data)
             MoviesDetails.objects.create(
                 movie_name=serializer.validated_data.get("movie_name"),
                 poster=serializer.validated_data.get("poster"),
@@ -330,7 +330,7 @@ class MovieDetailsAdding(APIView):
 
 class MoviesListing(APIView):
     def get(self,request):
-        queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values().order_by('-id')[:4]
+        queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values().order_by('-id')[:8]
         return Response(queryset,status=status.HTTP_200_OK)
         
 

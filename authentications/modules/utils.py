@@ -32,6 +32,7 @@ def verify_user_code(verification_sid, user_input):
 
 
 def send_whatsapp_message(number):
+
     media_url = 'https://imgs.search.brave.com/OuC1MTdFjW3aBb6A9sFZFYUxelELr43SMPyYSyCwVU8/rs:fit:860:0:0/g:ce/aHR0cHM6Ly9sb2dv/bWFrZXJyLmFpL2Js/b2cvd3AtY29udGVu/dC91cGxvYWRzLzIw/MjIvMDUvaWtlYS1s/b2dvLTEtMTAyNHg2/MTQucG5n'
     client = Client(settings.ACCOUNT_SID, settings.AUTH_TOKEN)
     message = client.messages.create(
@@ -40,5 +41,3 @@ def send_whatsapp_message(number):
                                 to=f'whatsapp:{number}',
                                 media_url=[media_url]
                             )
-
-    print(message.sid)

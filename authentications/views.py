@@ -219,7 +219,7 @@ class EmailUpdateVerification(APIView):
                     user = request.user
                     user.email = email
                     user.save()
-                    return Response({"msg": "Email Updated Succesfully"})
+                    return Response({"msg": "Email Updated Succesfully"},status=status.HTTP_200_OK)
                 return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({"msg":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
@@ -240,7 +240,6 @@ class UserProfileView(APIView):
             "user"
         )[0]
         serializer = UserProfileListSerializer(user)
-        print(serializer.data)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -261,7 +260,6 @@ class UserProfileView(APIView):
         serializer = UserProfileListSerializer(queryset, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            # print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -332,8 +330,6 @@ class OtpVerification(APIView):
     def post(self, request):
         phone = request.data.get('phone')
         verification_sid = cache.get(f"{CACHE_PREFIX_MOBILE_UPDATION}_{phone}")
-        print(verification_sid)
-        print(type(verification_sid))
         if verification_sid is not None:     
             otp_enterd = request.data.get("otp_enterd")
             print(otp_enterd)

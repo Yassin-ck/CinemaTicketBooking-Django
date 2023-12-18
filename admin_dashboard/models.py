@@ -1,5 +1,5 @@
+from unittest.util import _MAX_LENGTH
 from django.contrib.gis.db import models
-
 
 class Languages(models.Model):
     name = models.CharField(max_length=255)
@@ -26,5 +26,6 @@ class MoviesDetails(models.Model):
     def __str__(self) -> str:
         return f"{self.movie_name}"
     
+
 
 

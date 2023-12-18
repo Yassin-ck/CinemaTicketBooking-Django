@@ -6,3 +6,4 @@ from .models import MoviesDetails, Languages
 
 admin.site.register(MoviesDetails)
 admin.site.register(Languages)
+

@@ -440,7 +440,6 @@ class ShowUpdatesToTheatres(APIView):
                 show_date = entry['show_dates__dates']
                 result_dict[screen_number].append(show_date)
             response_data = [{'screen_number': key, 'dates': value} for key, value in result_dict.items()]
-
         return Response(response_data,status=status.HTTP_200_OK)
         
       
@@ -469,4 +468,6 @@ class ShowUpdatesToTheatres(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
-
+class ShowDetailsView(APIView):
+    def get(self,request):
+        pass

@@ -51,3 +51,4 @@ class MovieDetailsCreateUpdateSerializer(serializers.ModelSerializer):
         instance.director = validated_data.get("director", instance.director)
         instance.save()
         return instance
+

@@ -9,7 +9,6 @@ from django.db.models import Q , F
 from admin_dashboard.models import MoviesDetails
 from rest_framework import status
 from datetime import datetime
-from rest_framework.permissions import IsAuthenticated
 from collections import defaultdict
 
 from authentications.models import MyUser
@@ -32,6 +31,8 @@ from utils.mapping_variables import (
     )
 from rest_framework.permissions import (
     AllowAny,
+    IsAuthenticatedOrReadOnly,
+    IsAuthenticated
 )
 from admin_dashboard.models import (
     Languages,
@@ -101,7 +102,7 @@ def date_formatting(date):
         return date
 
 
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedOrReadOnly])
 class MovieSearching(APIView):
     name = openapi.Parameter('q',in_=openapi.IN_QUERY, description="movie name or director name",type=openapi.TYPE_STRING,)
     @swagger_auto_schema(
@@ -123,7 +124,7 @@ class MovieSearching(APIView):
 
 
 
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedOrReadOnly])
 class MovieSelectionView(APIView):
     location = openapi.Parameter( 'search', in_=openapi.IN_QUERY, description='location', type=openapi.TYPE_STRING, )
     language = openapi.Parameter( 'q', in_=openapi.IN_QUERY, description='language', type=openapi.TYPE_STRING, )
@@ -171,7 +172,6 @@ class MovieSelectionView(APIView):
                   ) 
              
             booked_tickets = set()
-            print(request.query_params)
             if queryset:
                 for ticket in queryset:
                     booked_tickets = booked_tickets.union(set(ticket.tickets))  
@@ -187,7 +187,7 @@ class MovieSelectionView(APIView):
                     for ticket in set(value.get('tickets', [])):
                         index = row_alpha.index(ticket[0]) if ticket[0] in row_alpha else None
                         if index is not None:
-                            response['seating'][index][int(ticket[1:])-1] = f'{ticket}{CACHED}' if request.GET.get('cache_id') is not None and value['cache_id'] == request.GET.get('cache_id') else f'{ticket}{BOOKED}'
+                            response['seating'][index][int(ticket[1:])-1] = f'{ticket}{CACHED}' if request.user.is_authenticated and value['cache_id'] == request.user.email else f'{ticket}{BOOKED}'
             for ticket in booked_tickets:
                 index = row_alpha.index(ticket[0]) if ticket[0] in row_alpha else None
                 response['seating'][index][int(ticket[1:])-1] = f'{ticket}{BOOKED}'
@@ -368,15 +368,15 @@ class TheatreSelectionView(APIView):
                             }]
                         }
                         current_screen_data.append(new_screen)
-
-                formatted_date = datetime.strptime(str(screen_details.get('show_dates')), "%Y-%m-%d").strftime("%b %d %a")
-                
-                if formatted_date not in date_data :
-                    date_data.append(formatted_date)
+                if str(screen_details.get('show_dates')) in Available_dates:
+                    formatted_date = datetime.strptime(str(screen_details.get('show_dates')), "%Y-%m-%d").strftime("%b %d %a")
+                    if formatted_date not in date_data :
+                        date_data.append(formatted_date)
             response_data = {
                 "data" : current_screen_data,
                 "dates":date_data  
             }
+            
             return Response(response_data, status=status.HTTP_200_OK)
         
     
@@ -390,23 +390,17 @@ class SingleMovieDetailsView(APIView):
         
         
         
-        
+@permission_classes([IsAuthenticated])     
 class TicketCachingView(APIView):
    
     @staticmethod
-    def hash_request_data(data):
-        data_str = json.dumps(data, sort_keys=True)
-        return hashlib.md5(data_str.encode()).hexdigest()
-
-    @staticmethod
-    def get_cache_key(request_data_hash):
-        return f"{CACHE_PREFIX_TICKET_BOOKING}_{request_data_hash}"
-    
+    def get_cache_key(cache_id):
+        return f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}"
     
     
     def put(self, request):
         print(request.data)
-        cache_id = request.data.get('cache_id')      
+        cache_id = request.user.email    
         if cache_id and request.data['tickets'][0][-1] != BOOKED:
             try:
                 key = cache.keys(f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}")[0]
@@ -420,37 +414,28 @@ class TicketCachingView(APIView):
                             value['tickets'].pop(0)
                     value['cache_id'] = cache_id
                     cache.set(key, value, CACHE_TIME)
-                    return Response({'cache_id': cache_id}, status=200)
-            except IndexError:
+                    return Response({'msg': 'seat added...'}, status=status.HTTP_200_OK)
+            except:
                 pass
         elif request.data['tickets'][0][-1] == BOOKED:
             return Response({"error":"Already Booked..."},status=status.HTTP_400_BAD_REQUEST)
         date = date_formatting(request.data.get('date'))
         request.data['date'] = date
-        request_data_hash = TicketCachingView.hash_request_data(request.data)
-        cache_key = TicketCachingView.get_cache_key(request_data_hash)
+        cache_key = TicketCachingView.get_cache_key(cache_id)
+        request.data['cache_id'] = cache_id
         cache.set(cache_key, request.data,CACHE_TIME)
-        return Response({'cache_id': request_data_hash}, status=200)
+        return Response({"msg":"cached....."}, status=status.HTTP_200_OK)
     
     
     def delete(self,request):
-        print(request.data,'request.data')
-        cache.delete(f"{CACHE_PREFIX_TICKET_BOOKING}_{request.data.get('cache_id')}")
+        cache.delete(f"{CACHE_PREFIX_TICKET_BOOKING}_{request.user.email}")
         return Response({"msg":"deleted"},status=status.HTTP_200_OK)
         
-
+@permission_classes([IsAuthenticated])
 class StripeCheckoutView(APIView):   
     def post(self,request):
-        print(request.user)
-        cache_id  = request.GET.get('cache_id')
-        print(cache_id)
-        user_profile = None
-        if request.user.is_authenticated:
-            try:
-                user_profile = request.user.userprofile
-            except:
-                pass
-        
+        cache_id  = request.user.email
+        user_profile = request.user.userprofile  
         if cache_id is not None:
             key = f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}"
             cached_data = cache.get(key)
@@ -463,7 +448,6 @@ class StripeCheckoutView(APIView):
                 Q(show_time__time=cached_data['time'])
                 ).values('screen__ticket_rate','movies__movie_name').first()
 
-            print(show_price)
             data = stripe.Product.create(
                 name="Total Amount",
                 default_price_data={
@@ -472,12 +456,10 @@ class StripeCheckoutView(APIView):
                 },
                 expand=["default_price"],
                 )
-            customer = None
-            if request.user.is_authenticated:
-                customer = stripe.Customer.create(
-                    email = request.user.email,
-                    phone = user_profile.phone
-                )
+            customer = stripe.Customer.create(
+                email = request.user.email,
+                phone = user_profile.phone
+            )
         
         try:
             checkout_session = stripe.checkout.Session.create(
@@ -490,7 +472,6 @@ class StripeCheckoutView(APIView):
                 phone_number_collection={"enabled": True},
                 payment_method_types=['card'], 
                 mode='payment',
-                metadata={'cache_id':key},
                 customer=customer.id if customer is not None else None,
                 success_url= settings.SITE_URL + '/payment/?success=true&session_id={CHECKOUT_SESSION_ID}',
                 cancel_url= settings.SITE_URL + '/payment/?canceled=true',
@@ -498,23 +479,23 @@ class StripeCheckoutView(APIView):
             print(checkout_session) 
             return Response(checkout_session.url,status=status.HTTP_200_OK)
         except Exception as e:
-            cache.delete(f"{CACHE_PREFIX_TICKET_BOOKING}_{request.data.get('cache_id')}")
+            cache.delete(f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}")
             print(e)
             return Response({"error":"something went Wrong"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+@permission_classes([IsAuthenticated])
 class TicketBookingApi(APIView):
     def get(self,request):
         session_id = request.GET.get('session_id')
+        key = f"{CACHE_PREFIX_TICKET_BOOKING}_{request.user.email}"
         if session_id:
             data = stripe.checkout.Session.retrieve(session_id)
             cached_ticket_data = cache.get(f"{CACHE_PREFIX_TICKET_DETAILS}_{data['customer_details']['email']}")
+            cached_data = cache.get(key)
             if cached_data is None and cached_ticket_data is not None:
                 return Response(cached_ticket_data,status=status.HTTP_200_OK)
             elif cached_data is None and cached_ticket_data is None:
                 return Response({"msg":"session cleared..."},status=status.HTTP_400_BAD_REQUEST)
-            key = data['metadata']['cache_id']
-            cached_data = cache.get(key)
             time = cached_data['time']
             date = cached_data['date']
             theatre_name = cached_data['theatre_name']
@@ -532,10 +513,11 @@ class TicketBookingApi(APIView):
             serializer = TicketBookingCreateUpdateSerializer(data=payment_data)
             if serializer.is_valid():
                 serializer.save()
+                print('FIRST')
                 try:
                     send_whatsapp_message(data['customer_details']['phone'])
-                except:
-                    pass
+                except Exception as e:
+                    print(e,'exce')
                 cache.delete(key)
                 self.user_checking(data['customer_details']['email'])
                 response_data = {
@@ -553,8 +535,6 @@ class TicketBookingApi(APIView):
                 cache.delete(key)
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         else:
-            cache_id = request.GET.get('cache_id')
-            key = f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}"
             cache.delete(key)
             return Response({'error':'Error while payment processing...'},status=status.HTTP_400_BAD_REQUEST)
   
