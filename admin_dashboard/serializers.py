@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from user_dashboard.serializers import RatingListSerializer
 from .models import(
      MoviesDetails,
      Languages
@@ -18,13 +19,15 @@ class LanguageChoiceSerializer(serializers.ModelSerializer):
 
 
 class MovieDetailListSerializer(serializers.ModelSerializer):
+    rating = RatingListSerializer(source="rating_set",many=True)
     class Meta:
         model = MoviesDetails
         fields = (
             "id",
             "movie_name",
             "poster",
-            "director"
+            "director",
+            "rating"
             )
 
 

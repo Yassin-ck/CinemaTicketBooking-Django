@@ -1,5 +1,7 @@
 from django.shortcuts import render
+from psycopg import DatabaseError
 from rest_framework.views import APIView
+from admin_dashboard.models import Languages, MoviesDetails
 from authentications.modules.utils import send_sms, verify_user_code
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,7 +15,17 @@ from rest_framework.decorators import permission_classes
 from .theatre_auth import TheatreAuthentication
 from rest_framework.decorators import authentication_classes
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-from utils.mapping_variables import row_alpha
+from django.core.cache import cache
+from utils.mapping_variables import (
+    RELEASED,
+    row_alpha,
+    TIME,
+    DATES,
+    MOVIE,
+    LANGUAGE,
+    today,
+    CACHE_PREFIX_THEATRE_AUTH
+    )
 from django.db.models import F
 from authentications.serializers import (
     LocationListSerializer,
@@ -37,6 +49,8 @@ from authentications.models import (
     Location
 )
 from .models import (
+    ShowDates,
+    ShowTime,
     TheareOwnerDetails,
     TheatreDetails,
     ScreenDetails,
@@ -178,7 +192,8 @@ class TheatreLoginRequest(APIView):
                 email_from = settings.EMAIL_HOST_USER
                 recipient_list = (email,)
                 send_email(subject, message, email_from, recipient_list)
-                response_data = {"email": email, "otp": otp, "msg": "Check Email......"}
+                response_data = {"email": email, "otp": otp}
+                cache.set(f"{CACHE_PREFIX_THEATRE_AUTH}_{email}",response_data,None)
                 return Response(response_data, status=status.HTTP_200_OK)
             except:
                 return Response(
@@ -197,33 +212,35 @@ class TheatreLoginVerify(APIView):
             400:"bad request"
         })
     def post(self, request):
-        print(request.data)
-
-        serializer = OtpSerilizers(data=request.data)
-
-        if serializer.is_valid():
-            otp = serializer.validated_data.get('otp')
-            otp_entered = serializer.validated_data.get('otp_entered')
-            email = serializer.validated_data.get('email')
-            if int(otp) == int(otp_entered):
-                try:
-                    queryset= TheatreDetails.objects.filter(
-                        Q(email=email) &
-                        Q(is_approved=True)).prefetch_related(
-                            'screen_details__screenseatarrangement'
-                            ).first()
-                    if queryset:
-                        token = views.get_tokens_for_user(queryset.owner.user, email)
-                    else:
-                        return Response({"msg":"You Are Not Authorized"},status=status.HTTP_401_UNAUTHORIZED)  
-                    datas =  [i.id for i in queryset.screen_details.all() if i.is_approved == False ]
-                    if  not datas:
-                        return Response({"msg": "loginned", "token": token}, status=status.HTTP_200_OK)
-                    return Response({"warning": "Continue With your Updation","id":datas[0],"token": token}, status=status.HTTP_403_FORBIDDEN)
-                except TheatreDetails.DoesNotExist:
-                    return Response({"msg": "You are not Verified.."})
-            return Response({"msg": "invalid otp.."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        email = request.data.get('email')
+        cached_auth_data = cache.get(f"{CACHE_PREFIX_THEATRE_AUTH}_{email}")
+        if cached_auth_data is not None:
+            otp = cached_auth_data.get('otp')
+            email = cached_auth_data.get('email')
+            otp_entered = request.data.get("otp_entered")
+            serializer = OtpSerilizers(data=request.data)
+            if serializer.is_valid():
+                if int(otp) == int(otp_entered):
+                    try:
+                        queryset= TheatreDetails.objects.filter(
+                            Q(email=email) &
+                            Q(is_approved=True)).prefetch_related(
+                                'screen_details__screenseatarrangement'
+                                ).first()
+                        if queryset:
+                            theatre = True
+                            token = views.get_tokens_for_user(queryset.owner.user,theatre, email)
+                        else:
+                            return Response({"msg":"You Are Not Authorized"},status=status.HTTP_401_UNAUTHORIZED)  
+                        datas =  [i.id for i in queryset.screen_details.all() if i.is_approved == False ]
+                        if not datas:
+                            return Response({"msg": "loginned", "token": token}, status=status.HTTP_200_OK)
+                        return Response({"warning": "Continue With your Updation","id":datas[0],"token": token}, status=status.HTTP_403_FORBIDDEN)
+                    except TheatreDetails.DoesNotExist:
+                        return Response({"msg": "You are not Verified.."})
+                return Response({"msg": "invalid otp.."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error":'..'},status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -241,7 +258,7 @@ class SearchLocaition(APIView):
         q = request.GET.get("q")
         if len(q) == 0:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        Q_base = Q(district__icontains=q) | Q(place__icontains=q)
+        Q_base = Q(district__istartswith=q) | Q(place__istartswith=q)
         location_data = Location.objects.filter(Q_base)
         if location_data:
             serializer = LocationListSerializer(location_data, many=True)
@@ -429,7 +446,7 @@ class ShowUpdatesToTheatres(APIView):
                 ).values('id',time=F('show_time__time'),languages=F('language__name'),movie=F('movies__movie_name'))
             return Response(queryset,status=status.HTTP_200_OK)
         else:
-            queryset = Shows.objects.filter(screen__theatre__email=request.auth).order_by('show_dates__dates').values(
+            queryset = Shows.objects.filter(screen__theatre__email=request.auth).values(
                 'show_dates__dates',
                 'screen__screen_number'
                 ).distinct().order_by('-show_dates__dates')
@@ -444,11 +461,12 @@ class ShowUpdatesToTheatres(APIView):
         
       
     
-    def post(self,request):
+    def post(self,request): 
         serializer = ShowCreateUpdateSerialzer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data,status=status.HTTP_200_OK)
+        print(serializer.errors)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -468,6 +486,37 @@ class ShowUpdatesToTheatres(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
-class ShowDetailsView(APIView):
-    def get(self,request):
-        pass
+@authentication_classes([TheatreAuthentication])
+@permission_classes([IsAuthenticated])
+class ShowDetailsForUpdating(APIView):
+    def get(self,request,screen_id): 
+        q = request.GET.get('q')
+        if q == MOVIE:
+            queryset =  self.get_model_data(MoviesDetails,~Q(status=RELEASED))
+        elif q[:5] == DATES:
+            time_data =  [int(i) for i in q.split(',')[1:]]
+            show = Shows.objects.filter(
+                Q(screen_id=screen_id) & 
+                Q(show_dates__dates__gt=today) & 
+                Q(show_time__id__in=time_data)
+                ).values(date=F('show_dates__dates'))
+            dates_to_exclude = [i['date'] for i in show]
+            Q_Base = (
+                Q(dates__gt=today) &
+                ~Q(dates__in=dates_to_exclude)
+            )
+            queryset = self.get_model_data(ShowDates,Q_Base)
+        elif q[:8] == LANGUAGE:
+            show = Shows.objects.filter(
+                Q(screen_id=screen_id) & 
+                Q(show_dates__dates__gt=today) & 
+                Q(movies_id=q[8:])
+                ).values('language_id')
+            language_to_exclude = [i['language_id'] for i in show]
+            queryset = self.get_model_data(Languages,~Q(id__in=language_to_exclude))
+        elif q == TIME:
+            queryset = self.get_model_data(ShowTime)
+        return Response({"data":queryset},status=status.HTTP_200_OK)
+    
+    def get_model_data(self,Models,*filters):
+        return Models.objects.filter(*filters).values()

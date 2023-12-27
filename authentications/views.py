@@ -12,6 +12,7 @@ from threading import Thread
 from authentications.modules.utils import send_sms, verify_user_code  # twilio
 import random, math
 from drf_yasg.utils import swagger_auto_schema
+from theatre_dashboard.models import TheareOwnerDetails
 from utils.mapping_variables import (
     CACHE_PREFIX_EMAIL_AUTHENTICATION,
     CACHE_PREFIX_EMAIL_UPDATION,
@@ -39,8 +40,8 @@ from .serializers import (
 
 
 # JWTToken
-def get_tokens_for_user(user, *args):
-    token = MyTokenSerializer.get_token(user, *args)
+def get_tokens_for_user(user,theatre, *args):
+    token = MyTokenSerializer.get_token(user,theatre, *args)
 
     return {
         "refresh": str(token),
@@ -185,8 +186,13 @@ class EmailAuthVerification(APIView):
             serializer = OtpSerilizers(data=request.data)
             if serializer.is_valid():
                 if int(otp) == int(otp_entered):
-                    user = MyUser.objects.get_or_create(email=email)
-                    token = get_tokens_for_user(user[0])
+                    user,_ = MyUser.objects.get_or_create(email=email)
+                    theatre = None
+                    try:
+                        theatre = TheareOwnerDetails.objects.get(user_id=user.id)
+                    except TheareOwnerDetails.DoesNotExist:
+                        pass 
+                    token = get_tokens_for_user(user,theatre)
                     return Response({"token": token}, status=status.HTTP_200_OK)
                 return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

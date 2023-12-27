@@ -1,4 +1,3 @@
-from unittest.util import _MAX_LENGTH
 from django.contrib.gis.db import models
 
 class Languages(models.Model):
@@ -24,7 +23,7 @@ class MoviesDetails(models.Model):
         unique_together = ("movie_name", "director")
 
     def __str__(self) -> str:
-        return f"{self.movie_name}"
+        return self.movie_name
     
 
 

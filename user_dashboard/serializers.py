@@ -1,15 +1,11 @@
-from django.forms import ValidationError
 from rest_framework import serializers
-from django.db.models import Q
 
-from utils.mapping_variables import Available_dates
 from .models import (
-    TicketBooking
+    TicketBooking,
+    Rating,
+    Review
     )
-from theatre_dashboard.models import (
-    ShowDates,
-    Shows
-    )
+from authentications.serializers import UserDetailsChoiceSerilaizer
 
 class TicketBookingCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,4 +41,21 @@ class TicketBookingCreateUpdateSerializer(serializers.ModelSerializer):
 
         return ticket_booking
     
+class ReviewListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ('review',)
     
+class RatingListSerializer(serializers.ModelSerializer):
+    review = ReviewListSerializer()
+    user = UserDetailsChoiceSerilaizer()
+    
+    class Meta:
+        model = Rating
+        fields = ('id','star','review','user')
+
+
+class RatingCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = ('user','movie','star')

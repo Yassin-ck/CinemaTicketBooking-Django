@@ -9,7 +9,8 @@ from .views import (
     TheatreDetailsView,
     ScreenDetailsForm,
     ScreenSeatArrangementDetails,
-    ShowUpdatesToTheatres
+    ShowUpdatesToTheatres,
+    ShowDetailsForUpdating,
 )
 
 urlpatterns = [
@@ -26,4 +27,5 @@ urlpatterns = [
     path("showview/",ShowUpdatesToTheatres.as_view(),name="showview"),
     path("showview/<int:screen>/<str:date>/",ShowUpdatesToTheatres.as_view(),name="showviewbydate"),
     path("showview/<int:pk>/",ShowUpdatesToTheatres.as_view(),name="showupdate"),
+    path("showview/movies&language/<int:screen_id>/",ShowDetailsForUpdating.as_view(),name="showmovie&language"),
 ]

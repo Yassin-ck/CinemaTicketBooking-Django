@@ -1,16 +1,12 @@
 from django.core.cache import cache
-import json
-import hashlib
-from django.utils.decorators import method_decorator
 from rest_framework.response import Response
 from rest_framework.decorators import permission_classes
 from rest_framework.views import APIView
-from django.db.models import Q , F
+from django.db.models import Q ,F ,Prefetch
 from admin_dashboard.models import MoviesDetails
 from rest_framework import status
 from datetime import datetime
 from collections import defaultdict
-
 from authentications.models import MyUser
 from .serializers import(
     TicketBookingCreateUpdateSerializer
@@ -26,16 +22,14 @@ from utils.mapping_variables import (
     CACHE_TIME,
     CACHED,
     BOOKED,
-    PROCESSING,
     CACHE_PREFIX_TICKET_DETAILS,
     )
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticatedOrReadOnly,
     IsAuthenticated
-)
+    )
 from admin_dashboard.models import (
-    Languages,
     MoviesDetails
     )
 from theatre_dashboard.models import (
@@ -43,18 +37,19 @@ from theatre_dashboard.models import (
     ScreenDetails,
     ScreenSeatArrangement,
     Shows
-)
+    )
 from .serializers import (
     TicketBookingCreateUpdateSerializer,
-)
+    RatingCreateUpdateSerializer,
+    )
 from admin_dashboard.serializers import (
     MovieDetailListSerializer,
-)
+    )
 from theatre_dashboard.serializers import (
     ScreenSeatArrangementChoiceSerailizer,
-    
-)
+    )
 from .models import (
+    Rating,
     TicketBooking,
     )
 from drf_yasg import openapi
@@ -71,7 +66,6 @@ from authentications.modules.utils import send_whatsapp_message
     
 
 def screen_seat_details(Q_Base):
-    print(Q_Base)
     return ScreenSeatArrangement.objects.filter(Q_Base).annotate(
         theatre_name=F('screen__theatre__theatre_name'),
         screen_number=F('screen__screen_number'),
@@ -88,8 +82,7 @@ def screen_seat_details(Q_Base):
             'theatre_name'
             ).first()  
         
-        
-   
+
     
 def date_formatting(date):
     try:
@@ -104,7 +97,7 @@ def date_formatting(date):
 
 @permission_classes([IsAuthenticatedOrReadOnly])
 class MovieSearching(APIView):
-    name = openapi.Parameter('q',in_=openapi.IN_QUERY, description="movie name or director name",type=openapi.TYPE_STRING,)
+    name = openapi.Parameter('q',in_=openapi.IN_QUERY, description="movie name or director name",type=openapi.TYPE_STRING)
     @swagger_auto_schema(
         operation_description="return list of movies by searching movie name or director name",
         manual_parameters=[name],
@@ -191,7 +184,6 @@ class MovieSelectionView(APIView):
             for ticket in booked_tickets:
                 index = row_alpha.index(ticket[0]) if ticket[0] in row_alpha else None
                 response['seating'][index][int(ticket[1:])-1] = f'{ticket}{BOOKED}'
-
             return Response(response, status=status.HTTP_200_OK)
         elif movie: 
             Q_Base = (
@@ -315,7 +307,7 @@ class TheatreSelectionView(APIView):
             if queryset:
                 return Response(queryset, status=status.HTTP_200_OK)
             return Response({"msg":"No theatre In your Location"}, status=status.HTTP_404_NOT_FOUND)
-                
+
         date = date_formatting(date)
         if date not in Available_dates:
             print(Available_dates)
@@ -376,18 +368,19 @@ class TheatreSelectionView(APIView):
                 "data" : current_screen_data,
                 "dates":date_data  
             }
-            
             return Response(response_data, status=status.HTTP_200_OK)
         
-    
-    
-    
+
+@permission_classes([IsAuthenticatedOrReadOnly])
 class SingleMovieDetailsView(APIView):
     def get (self,request,movie,id):
-        queryset = MoviesDetails.objects.filter(Q(movie_name=movie) & Q(id=id)).first()
+        queryset = MoviesDetails.objects.filter(Q(movie_name=movie) & Q(id=id)).prefetch_related(
+            Prefetch('rating_set',Rating.objects.select_related('review','user'))).first() 
         serializer = MovieDetailListSerializer(queryset)
         return Response({'data':serializer.data},status=status.HTTP_200_OK)
-        
+    
+    def post(self,request):
+        serializer = RatingCreateUpdateSerializer(data=request.data)
         
         
 @permission_classes([IsAuthenticated])     
@@ -399,7 +392,6 @@ class TicketCachingView(APIView):
     
     
     def put(self, request):
-        print(request.data)
         cache_id = request.user.email    
         if cache_id and request.data['tickets'][0][-1] != BOOKED:
             try:
@@ -430,7 +422,7 @@ class TicketCachingView(APIView):
     def delete(self,request):
         cache.delete(f"{CACHE_PREFIX_TICKET_BOOKING}_{request.user.email}")
         return Response({"msg":"deleted"},status=status.HTTP_200_OK)
-        
+         
 @permission_classes([IsAuthenticated])
 class StripeCheckoutView(APIView):   
     def post(self,request):
@@ -439,7 +431,6 @@ class StripeCheckoutView(APIView):
         if cache_id is not None:
             key = f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}"
             cached_data = cache.get(key)
-            cached_data["payment"] = PROCESSING
             cache.set(key, cached_data, None)
             show_price = Shows.objects.filter(
                 Q(screen__theatre__theatre_name=cached_data['theatre_name']) &
@@ -460,7 +451,6 @@ class StripeCheckoutView(APIView):
                 email = request.user.email,
                 phone = user_profile.phone
             )
-        
         try:
             checkout_session = stripe.checkout.Session.create(
                 line_items=[
@@ -482,6 +472,8 @@ class StripeCheckoutView(APIView):
             cache.delete(f"{CACHE_PREFIX_TICKET_BOOKING}_{cache_id}")
             print(e)
             return Response({"error":"something went Wrong"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 @permission_classes([IsAuthenticated])
 class TicketBookingApi(APIView):
@@ -563,4 +555,4 @@ class BookedView(APIView):
             return Response(queryset,status=status.HTTP_200_OK)
         return Response({"msg":"no bookings.."},status=status.HTTP_400_BAD_REQUEST)
         
-    
+

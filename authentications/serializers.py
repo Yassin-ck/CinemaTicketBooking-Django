@@ -14,7 +14,8 @@ from .models import (
 
 class MyTokenSerializer(TokenObtainPairSerializer):
     @classmethod
-    def get_token(cls, user, *args):
+    def get_token(cls, user,theatre, *args):
+        print(theatre,args )
         token = super().get_token(user)
         if user.userprofile.phone:
             token["phone"] = user.userprofile.phone
@@ -22,6 +23,8 @@ class MyTokenSerializer(TokenObtainPairSerializer):
             token["username"] = user.username
         if user.email:
             token["email"] = user.email
+        if  theatre:
+            token['is_theatre'] = True
         if args:
             token["theatre_email"] = args[0]
         return token
