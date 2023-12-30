@@ -1,10 +1,6 @@
 from django.contrib.gis.db import models
 from authentications.models import MyUser, Location
-from admin_dashboard.models import  (
-    MoviesDetails,
-    Languages
-    )
-
+from admin_dashboard.models import MoviesDetails, Languages
 
 
 class TheareOwnerDetails(models.Model):
@@ -45,7 +41,6 @@ class TheatreDetails(models.Model):
     is_verified = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
 
-
     def __str__(self) -> str:
         return self.theatre_name
 
@@ -56,12 +51,13 @@ class ShowTime(models.Model):
     def __str__(self) -> str:
         return str(self.time)
 
+
 class ShowDates(models.Model):
     dates = models.DateField()
-    
+
     def __str__(self) -> str:
         return f"{self.dates}"
-    
+
 
 class ScreenDetails(models.Model):
     theatre = models.ForeignKey(
@@ -76,25 +72,24 @@ class ScreenDetails(models.Model):
 
     def __str__(self) -> str:
         return f"{self.theatre.theatre_name}'s screen number {self.screen_number}"
-    
-    
+
+
 class Shows(models.Model):
-    show_time = models.ManyToManyField(ShowTime, blank=True,related_name="showtime")
-    show_dates = models.ManyToManyField(ShowDates, blank=True,related_name='showdate')
+    show_time = models.ManyToManyField(ShowTime, blank=True, related_name="showtime")
+    show_dates = models.ManyToManyField(ShowDates, blank=True, related_name="showdate")
     movies = models.ForeignKey(
         MoviesDetails, on_delete=models.PROTECT, null=True, blank=True
     )
-    language = models.ForeignKey(Languages,on_delete=models.DO_NOTHING)
+    language = models.ForeignKey(Languages, on_delete=models.DO_NOTHING)
     screen = models.ForeignKey(
-     ScreenDetails, on_delete=models.PROTECT, null=True, blank=True
+        ScreenDetails, on_delete=models.PROTECT, null=True, blank=True
     )
 
     def __str__(self) -> str:
-        return  f"{self.id}"
-    
+        return f"{self.id}"
+
     class Meta:
-        unique_together = ('language','screen','movies')
-    
+        unique_together = ("language", "screen", "movies")
 
 
 class ScreenSeatArrangement(models.Model):

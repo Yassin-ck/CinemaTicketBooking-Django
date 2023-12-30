@@ -236,49 +236,48 @@ EMAIL_USE_TLS = True
 IP_AUTH = os.getenv("IP_AUTH")
 
 
-#swagger
+# swagger
 SWAGGER_SETTINGS = {
     "TITLE": "cinemaTicketBooking",
     "SERVE_INCLUDE_SCHEMA": False,
-    "SECURITY_DEFINITIONS":{
-        'Bearer': {
-            'in': 'header',
-            'name': 'Authorization',
-            'type': 'apiKey',
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "in": "header",
+            "name": "Authorization",
+            "type": "apiKey",
         },
-    }
+    },
 }
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://localhost:6379/', 
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://localhost:6379/",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     }
 }
 
 
+# stripe
 
-#stripe
-
-STRIPE_SECRET_KEY = 'sk_test_51OL0cSSCSC2S0RMY46ur26vAegNrd5ePX5gMbM6NxtlQB2TwCe4iL3cWyC86FzspSVBtxVBqHdIe6bUmT7nXlYpf00QHVMmD1G'
+STRIPE_SECRET_KEY = "sk_test_51OL0cSSCSC2S0RMY46ur26vAegNrd5ePX5gMbM6NxtlQB2TwCe4iL3cWyC86FzspSVBtxVBqHdIe6bUmT7nXlYpf00QHVMmD1G"
 SITE_URL = "http://localhost:5173"
 
-#celery
+# celery
 
 
-CELERY_BROKER_URL = 'redis://localhost:6379/'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TASK_SERAILIZER = 'json'
+CELERY_BROKER_URL = "redis://localhost:6379/"
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_SERAILIZER = "json"
 
-#for storing result
+# for storing result
 CELERY_RESULT_BACKEND = "django-db"
 
-#celery beat settings
-CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler'
+# celery beat settings
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

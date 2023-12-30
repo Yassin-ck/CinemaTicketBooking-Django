@@ -11,7 +11,7 @@ from utils.mapping_variables import (
     UPCOMING,
     PENDING,
     RELEASED,
-    )
+)
 from theatre_dashboard.models import (
     TheareOwnerDetails,
     TheatreDetails,
@@ -21,13 +21,13 @@ from theatre_dashboard.serializers import (
     TheatrOwnerCreateUpdateSerializer,
     TheatreListSerializer,
     TheatreDetailsCreateUpdateSerializer,
-    TheatreListChoiceSerializer
+    TheatreListChoiceSerializer,
 )
-from authentications.serializers import( 
+from authentications.serializers import (
     UserProfileListSerializer,
     RequestedLocationListSerializer,
-    RequestedLocationCreateUpdateSerializer,   
-        )
+    RequestedLocationCreateUpdateSerializer,
+)
 
 from .serializers import (
     MovieDetailListSerializer,
@@ -36,23 +36,22 @@ from .serializers import (
 from authentications.models import (
     UserProfile,
     RequestLocation,
-    )
+)
 from .models import (
     Languages,
     MoviesDetails,
-    )
-#swagger
+)
+
+# swagger
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-#celery
+# celery
 from .tasks import send_mail_func
 from django.http import HttpResponse
 
 
-
-
-#sending mail through celery
+# sending mail through celery
 def send_mail_to_all_users(request):
     send_mail_func.delay()
     return HttpResponse("Email has been Sent Successfully")
@@ -63,10 +62,7 @@ class UserProfileViewBYAdmin(APIView):
     @swagger_auto_schema(
         tags=["Admin View"],
         operation_description="Users Full View",
-        responses={
-            200:UserProfileListSerializer,
-            400:"errors"
-        }
+        responses={200: UserProfileListSerializer, 400: "errors"},
     )
     def get(self, request):
         queryset = UserProfile.objects.select_related("user").order_by("user__username")
@@ -74,7 +70,9 @@ class UserProfileViewBYAdmin(APIView):
         paginator = UserProfilePagination()
         number_of_page = number_of_users // paginator.page_size
         result_page = paginator.paginate_queryset(queryset, request)
-        serializer = UserProfileListSerializer(result_page, many=True, context={"request": request})
+        serializer = UserProfileListSerializer(
+            result_page, many=True, context={"request": request}
+        )
         response_data = {
             "user": serializer.data,
             "page_number": number_of_page,
@@ -84,31 +82,21 @@ class UserProfileViewBYAdmin(APIView):
 
 @permission_classes([IsAdminUser])
 class LocationRequests(APIView):
-    
     @swagger_auto_schema(
         tags=["Admin View"],
         operation_description="New Location Requests view",
-        responses={
-            200:RequestedLocationListSerializer,
-            500:"Internal errors"
-        }
+        responses={200: RequestedLocationListSerializer, 500: "Internal errors"},
     )
     def get(self, request):
         queryset = RequestLocation.objects.filter(status=PENDING)
         serializer = RequestedLocationListSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-
-
     @swagger_auto_schema(
         tags=["Admin Verification"],
         operation_description="Accept or Reject New Location Request",
         request_body=RequestedLocationCreateUpdateSerializer,
-        responses={
-            200:RequestedLocationCreateUpdateSerializer,
-            400:"bad request"
-        }
+        responses={200: RequestedLocationCreateUpdateSerializer, 400: "bad request"},
     )
     def put(self, request, pk=None):
         if pk:
@@ -120,14 +108,15 @@ class LocationRequests(APIView):
 @permission_classes([IsAdminUser])
 class TheatreOwnerRequest(APIView):
     @swagger_auto_schema(
-        tags=['Admin View'],
+        tags=["Admin View"],
         operation_description="New Theatre Owners request View",
         responses={
-            200:TheatreOwnerListSerializer,
-            404:"not Found",
-            500:"internal error",
-            400:"bad request"
-        })
+            200: TheatreOwnerListSerializer,
+            404: "not Found",
+            500: "internal error",
+            400: "bad request",
+        },
+    )
     def get(self, request, pk=None):
         if not pk:
             queryset = TheareOwnerDetails.objects.filter(
@@ -138,23 +127,24 @@ class TheatreOwnerRequest(APIView):
             try:
                 queryset = TheareOwnerDetails.objects.get(id=pk)
             except:
-                return Response({"errors":"No Such Owner request"},status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"errors": "No Such Owner request"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
             serializer = TheatreOwnerListSerializer(queryset)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-        
-
-
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        tags=['Admin Verification'],
+        tags=["Admin Verification"],
         operation_description="New Theatre Owners request Verification",
         request_body=TheatrOwnerCreateUpdateSerializer,
         responses={
-            200:TheatrOwnerCreateUpdateSerializer,
-            404:"not Found",
-            500:"internal error",
-            400:"bad request"
-        })
+            200: TheatrOwnerCreateUpdateSerializer,
+            404: "not Found",
+            500: "internal error",
+            400: "bad request",
+        },
+    )
     def put(self, request, pk=None):
         if pk:
             queryset = TheareOwnerDetails.objects.get(id=pk)
@@ -184,20 +174,23 @@ class TheatreOwnerRequest(APIView):
                     send_email(subject, message, email_from, recipient_list)
                     return Response({"msg": "Rejected"}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"errors":"specify User with id"},status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"errors": "specify User with id"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @permission_classes([IsAdminUser])
 class TheatreRequest(APIView):
     @swagger_auto_schema(
-        tags=['Admin View'],
+        tags=["Admin View"],
         operation_description="New Theatre request View",
         responses={
-            200:TheatreListSerializer,
-            404:"not Found",
-            500:"internal error",
-            400:"bad request"
-        })
+            200: TheatreListSerializer,
+            404: "not Found",
+            500: "internal error",
+            400: "bad request",
+        },
+    )
     def get(self, request, pk=None):
         if not pk:
             queryset = TheatreDetails.objects.filter(is_approved=False).only(
@@ -205,23 +198,23 @@ class TheatreRequest(APIView):
             )
             serializer = TheatreListSerializer(queryset, many=True)
         else:
-            queryset = TheatreDetails.objects.filter(id=pk).select_related("owner").first()
+            queryset = (
+                TheatreDetails.objects.filter(id=pk).select_related("owner").first()
+            )
             serializer = TheatreListChoiceSerializer(queryset)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    
-    
 
     @swagger_auto_schema(
-        tags=['Admin Verification'],
+        tags=["Admin Verification"],
         operation_description="New Theatres request Verification",
         request_body=TheatreDetailsCreateUpdateSerializer,
         responses={
-            200:TheatreDetailsCreateUpdateSerializer,
-            404:"not Found",
-            500:"internal error",
-            400:"bad request"
-        })
+            200: TheatreDetailsCreateUpdateSerializer,
+            404: "not Found",
+            500: "internal error",
+            400: "bad request",
+        },
+    )
     def put(self, request, pk=None):
         if pk:
             queryset = TheatreDetails.objects.get(id=pk)
@@ -255,37 +248,44 @@ class TheatreRequest(APIView):
 
 
 permission_classes([IsAdminUser])
+
+
 class MovieDetailsAdding(APIView):
     @swagger_auto_schema(
-        tags=['Admin View'],
+        tags=["Admin View"],
         operation_description="Movies details View",
         responses={
-            200:MovieDetailListSerializer,
-            404:"not Found",
-            500:"internal error",
-            400:"bad request"
-        })
+            200: MovieDetailListSerializer,
+            404: "not Found",
+            500: "internal error",
+            400: "bad request",
+        },
+    )
     def get(self, reqeust, pk=None):
         if not pk:
-            queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values('id','movie_name','director')
+            queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values(
+                "id", "movie_name", "director"
+            )
         else:
             queryset = MoviesDetails.objects.filter(id=pk).values().first()
             if not queryset:
-                return Response({"errors":"Not Available"},status=status.HTTP_404_NOT_FOUND)
-        return Response(queryset, status=status.HTTP_200_OK,content_type="multipart/formdata")
-
-
-
+                return Response(
+                    {"errors": "Not Available"}, status=status.HTTP_404_NOT_FOUND
+                )
+        return Response(
+            queryset, status=status.HTTP_200_OK, content_type="multipart/formdata"
+        )
 
     @swagger_auto_schema(
-        tags=['Admin Posts'],
+        tags=["Admin Posts"],
         operation_description="New Movie Adding",
         request_body=MovieDetailsCreateUpdateSerializer,
         responses={
-            200:MovieDetailsCreateUpdateSerializer,
-            500:"internal error",
-            400:"bad request"
-        })
+            200: MovieDetailsCreateUpdateSerializer,
+            500: "internal error",
+            400: "bad request",
+        },
+    )
     def post(self, request):
         print(request.data)
         serializer = MovieDetailsCreateUpdateSerializer(data=request.data)
@@ -300,38 +300,38 @@ class MovieDetailsAdding(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
     @swagger_auto_schema(
-        tags=['Admin Posts'],
+        tags=["Admin Posts"],
         operation_description="Movie Detials Editing",
         request_body=MovieDetailsCreateUpdateSerializer,
         responses={
-            200:MovieDetailsCreateUpdateSerializer,
-            500:"internal error",
-            400:"bad request",
-            404:"Not Found"
-        })
+            200: MovieDetailsCreateUpdateSerializer,
+            500: "internal error",
+            400: "bad request",
+            404: "Not Found",
+        },
+    )
     def put(self, request, pk):
-            try:
-                movies = MoviesDetails.objects.get(id=pk)
-            except:
-                return Response({"error":"Not Available"},status=status.HTTP_404_NOT_FOUND)
-            serializer = MovieDetailsCreateUpdateSerializer(
-                movies, data=request.data, partial=True
+        try:
+            movies = MoviesDetails.objects.get(id=pk)
+        except:
+            return Response(
+                {"error": "Not Available"}, status=status.HTTP_404_NOT_FOUND
             )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data,status=status.HTTP_200_OK)
-            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
+        serializer = MovieDetailsCreateUpdateSerializer(
+            movies, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MoviesListing(APIView):
-    def get(self,request):
-        queryset = MoviesDetails.objects.filter(~Q(status=RELEASED)).values().order_by('-id')[:8]
-        return Response(queryset,status=status.HTTP_200_OK)
-        
-
-
+    def get(self, request):
+        queryset = (
+            MoviesDetails.objects.filter(~Q(status=RELEASED))
+            .values()
+            .order_by("-id")[:8]
+        )
+        return Response(queryset, status=status.HTTP_200_OK)

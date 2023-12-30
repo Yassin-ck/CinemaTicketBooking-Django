@@ -5,9 +5,9 @@ from .models import MoviesDetails, Languages
 
 
 class MoviesDetailsAdmin(admin.ModelAdmin):
-    list_display = ('id','movie_name')
+    list_display = ("id", "movie_name")
+
 
 admin.site.register(MoviesDetails, MoviesDetailsAdmin)
 
 admin.site.register(Languages)
-

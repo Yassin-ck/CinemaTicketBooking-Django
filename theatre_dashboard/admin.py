@@ -6,7 +6,7 @@ from .models import (
     ScreenSeatArrangement,
     Shows,
     ShowTime,
-    ShowDates
+    ShowDates,
 )
 
 # Register your models here.
@@ -17,21 +17,25 @@ admin.site.register(ScreenSeatArrangement)
 
 @admin.register(ScreenDetails)
 class ScreenDetailsAdmin(admin.ModelAdmin):
-    list_display = ('id',"screen_number","is_approved")
+    list_display = ("id", "screen_number", "is_approved")
 
 
 @admin.register(ShowTime)
 class ShowTimeAdmin(admin.ModelAdmin):
-    list_display = ("id",'time',)
-    
-    
-    
+    list_display = (
+        "id",
+        "time",
+    )
+
+
 @admin.register(ShowDates)
 class ShowDatesAdmin(admin.ModelAdmin):
-    list_display = ("id",'dates',)
-    
-    
-    
+    list_display = (
+        "id",
+        "dates",
+    )
+
+
 @admin.register(Shows)
 class ShowsAdmin(admin.ModelAdmin):
-    list_display = ("id","screen",'language','movies')
+    list_display = ("id", "screen", "language", "movies")

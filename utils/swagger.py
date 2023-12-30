@@ -8,7 +8,6 @@
 # )
 
 
-
 # @swagger_auto_schema(
 #     operation_description = "return list of all recored",
 #     request_body=serilaizerclass,

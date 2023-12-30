@@ -9,7 +9,6 @@ from .views import (
     EmailUpdateView,
     EmailAuthVerification,
     EmailUpdateVerification,
-    
 )
 
 urlpatterns = [

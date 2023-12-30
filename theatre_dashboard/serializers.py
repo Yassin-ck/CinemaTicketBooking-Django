@@ -13,8 +13,9 @@ from .models import (
 )
 from admin_dashboard.serializers import (
     LanguageChoiceSerializer,
-    MovieDetailsChoiceSerializer
+    MovieDetailsChoiceSerializer,
 )
+
 
 class TheatreOwnerListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,6 +30,7 @@ class TheatreOwnerListSerializer(serializers.ModelSerializer):
             "id_number",
             "address",
         )
+
 
 class TheatrOwnerCreateUpdateSerializer(serializers.ModelSerializer):
     id_proof = serializers.ImageField(required=False)
@@ -52,8 +54,6 @@ class TheatrOwnerCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
-
-
 class TheatreOwnerChoiceSerializer(serializers.ModelSerializer):
     id_proof = serializers.ImageField()
 
@@ -73,7 +73,6 @@ class TheatreOwnerChoiceSerializer(serializers.ModelSerializer):
 
 
 class TheatreDetailsCreateUpdateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = TheatreDetails
         fields = (
@@ -93,6 +92,7 @@ class TheatreDetailsCreateUpdateSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class TheatreListSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheatreDetails
@@ -101,10 +101,11 @@ class TheatreListSerializer(serializers.ModelSerializer):
             "theatre_name",
             "address",
         )
-        
-        
+
+
 class TheatreListChoiceSerializer(serializers.ModelSerializer):
     owner = TheatreOwnerChoiceSerializer()
+
     class Meta:
         model = TheatreDetails
         fields = (
@@ -119,90 +120,91 @@ class TheatreListChoiceSerializer(serializers.ModelSerializer):
             "address",
         )
 
-        
+
 class ShowTimeChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShowTime
         fields = ("time",)
-        
-        
-        
+
+
 class ShowDatesChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShowDates
         fields = ("dates",)
-        
-
 
 
 class ShowCreateUpdateSerialzer(serializers.ModelSerializer):
     class Meta:
         model = Shows
-        fields = (
-            'show_time',
-            'show_dates',
-            'language',
-            'movies',
-            'screen'
-            )   
-        
+        fields = ("show_time", "show_dates", "language", "movies", "screen")
 
-    
     def create(self, validated_data):
-        show_time = validated_data.get('show_time')
-        show_dates = validated_data.get('show_dates')
-        language = validated_data.get('language')
-        movies = validated_data.get('movies')
-        screen = validated_data.get('screen')
+        show_time = validated_data.get("show_time")
+        show_dates = validated_data.get("show_dates")
+        language = validated_data.get("language")
+        movies = validated_data.get("movies")
+        screen = validated_data.get("screen")
         if Shows.objects.filter(
-            Q(show_dates__in=show_dates) & 
-            Q(show_time__in=show_time) & 
-            Q(screen_id=screen)).exists():
-            raise serializers.ValidationError('Already exist')
+            Q(show_dates__in=show_dates)
+            & Q(show_time__in=show_time)
+            & Q(screen_id=screen)
+        ).exists():
+            raise serializers.ValidationError("Already exist")
         try:
             instance = Shows.objects.create(
-                language = language,
-                movies = movies,
-                screen = screen     
-                )
+                language=language, movies=movies, screen=screen
+            )
             instance.show_dates.add(*show_dates)
             instance.show_time.add(*show_time)
-            instance.save()   
+            instance.save()
         except:
-            raise serializers.ValidationError({'error':"Something Went Wrong..."})
+            raise serializers.ValidationError({"error": "Something Went Wrong..."})
         return validated_data
-        
 
-            
     def update(self, instance, validated_data):
-        show_time = validated_data.get('show_time')
-        show_dates = validated_data.get('show_dates') 
+        show_time = validated_data.get("show_time")
+        show_dates = validated_data.get("show_dates")
         date_data = instance.show_dates.all()
         for i in date_data:
             if i not in show_dates:
                 raise serializers.ValidationError("You can't remove date already added")
-        
-        with transaction.atomic():               
-            if 'show_time' in validated_data :
+
+        with transaction.atomic():
+            if "show_time" in validated_data:
                 instance.show_time.clear()
                 instance.show_time.add(*show_time)
-            if 'show_dates' in validated_data:
+            if "show_dates" in validated_data:
                 instance.show_dates.clear()
                 instance.show_dates.add(*show_dates)
-            instance.language = validated_data.get('language', instance.language)
-            instance.movies = validated_data.get('movies', instance.movies)
-            instance.screen = validated_data.get('screen', instance.screen)
+            instance.language = validated_data.get("language", instance.language)
+            instance.movies = validated_data.get("movies", instance.movies)
+            instance.screen = validated_data.get("screen", instance.screen)
             instance.save()
             date_data = [i.id for i in instance.show_dates.all()]
             time_data = [i.id for i in instance.show_time.all()]
-            if Shows.objects.exclude(id=instance.id).filter(
-                    Q(screen=instance.screen) & 
-                    Q(show_dates__in=date_data) & 
-                    Q(show_time__in=time_data)
-                    ).exists():
+            if (
+                Shows.objects.exclude(id=instance.id)
+                .filter(
+                    Q(screen=instance.screen)
+                    & Q(show_dates__in=date_data)
+                    & Q(show_time__in=time_data)
+                )
+                .exists()
+            ):
                 transaction.set_rollback(True)
-                raise serializers.ValidationError('shows with desired time and date already exist')
+                raise serializers.ValidationError(
+                    "shows with desired time and date already exist"
+                )
         return instance
+
+
+class ShowsListSerializer(serializers.ModelSerializer):
+    language = LanguageChoiceSerializer()
+    movies = MovieDetailsChoiceSerializer()
+
+    class Meta:
+        model = Shows
+        fields = ("movies", "language")
 
 
 class ShowsChoiceSerializer(serializers.ModelSerializer):
@@ -213,13 +215,7 @@ class ShowsChoiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shows
-        fields = (
-            "show_time",
-            "movies",
-            "language",
-            "show_dates"
-            )
-            
+        fields = ("show_time", "movies", "language", "show_dates")
 
 
 class ScreenDetailsListSerializer(serializers.ModelSerializer):
@@ -233,7 +229,8 @@ class ScreenDetailsListSerializer(serializers.ModelSerializer):
             "row_count",
             "column_count",
         )
-        
+
+
 class ScreenDetailsCreateUpdateSerailizer(serializers.ModelSerializer):
     class Meta:
         model = ScreenDetails
@@ -247,13 +244,25 @@ class ScreenDetailsCreateUpdateSerailizer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-        instance.screen_number = validated_data.get("screen_number", instance.screen_number)
-        instance.number_of_seats = validated_data.get("number_of_seats", instance.number_of_seats)
+        instance.screen_number = validated_data.get(
+            "screen_number", instance.screen_number
+        )
+        instance.number_of_seats = validated_data.get(
+            "number_of_seats", instance.number_of_seats
+        )
         instance.row_count = validated_data.get("row_count", instance.row_count)
-        instance.column_count = validated_data.get("column_count", instance.column_count )
-        if  int(instance.column_count) * int(instance.row_count) != int(instance.number_of_seats):
-            raise serializers.ValidationError({'error': 'The product of row count and column count must equal the number of seats.'})
-        instance.is_approved=True
+        instance.column_count = validated_data.get(
+            "column_count", instance.column_count
+        )
+        if int(instance.column_count) * int(instance.row_count) != int(
+            instance.number_of_seats
+        ):
+            raise serializers.ValidationError(
+                {
+                    "error": "The product of row count and column count must equal the number of seats."
+                }
+            )
+        instance.is_approved = True
         instance.save()
         return instance
 
@@ -264,24 +273,15 @@ class ScreenDetailsChoicesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ScreenDetails
-        fields = (
-            "screen_number",
-            "shows_set", 
-            "theatre",
-            "row_count",
-            "column_count"
-            )
-    
-    
-    
+        fields = ("screen_number", "shows_set", "theatre", "row_count", "column_count")
 
 
 class ScreenSeatArrangementListSerailizer(serializers.ModelSerializer):
     class Meta:
         model = ScreenSeatArrangement
         fields = ("seating",)
-        
-        
+
+
 class ScreenSeatArrangementCreateUpdateSerailizer(serializers.ModelSerializer):
     class Meta:
         model = ScreenSeatArrangement
@@ -290,10 +290,7 @@ class ScreenSeatArrangementCreateUpdateSerailizer(serializers.ModelSerializer):
 
 class ScreenSeatArrangementChoiceSerailizer(serializers.ModelSerializer):
     screen = ScreenDetailsChoicesSerializer()
+
     class Meta:
         model = ScreenSeatArrangement
-        fields = (
-            "seating",
-            "screen"
-            )
-         
+        fields = ("seating", "screen")

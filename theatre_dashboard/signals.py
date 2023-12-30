@@ -6,7 +6,7 @@ from .models import (
     TheatreDetails,
     ScreenSeatArrangement,
     Shows,
-    )
+)
 
 
 @receiver(post_save, sender=TheatreDetails)
@@ -21,9 +21,3 @@ def create_screens_for_theatres(sender, instance, created, *args, **kwargs):
 def create_Seat_for_Screens(sender, instance, created, *args, **kwargs):
     if created:
         ScreenSeatArrangement.objects.create(screen=instance)
-
-
-
-
-
-  

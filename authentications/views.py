@@ -16,8 +16,8 @@ from theatre_dashboard.models import TheareOwnerDetails
 from utils.mapping_variables import (
     CACHE_PREFIX_EMAIL_AUTHENTICATION,
     CACHE_PREFIX_EMAIL_UPDATION,
-    CACHE_PREFIX_MOBILE_UPDATION
-    )
+    CACHE_PREFIX_MOBILE_UPDATION,
+)
 from rest_framework.permissions import (
     IsAuthenticated,
 )
@@ -33,15 +33,13 @@ from .serializers import (
     MyTokenSerializer,
     UserProfileListSerializer,
     GoogleSocialAuthSerializer,
-    OtpSerilizers
+    OtpSerilizers,
 )
 
 
-
-
 # JWTToken
-def get_tokens_for_user(user,theatre, *args):
-    token = MyTokenSerializer.get_token(user,theatre, *args)
+def get_tokens_for_user(user, theatre, *args):
+    token = MyTokenSerializer.get_token(user, theatre, *args)
 
     return {
         "refresh": str(token),
@@ -59,7 +57,7 @@ class GoogleSocialAuthView(APIView):
 
 class CurrentLocation(APIView):
     @swagger_auto_schema(
-        operation_description=" current location of user",    
+        operation_description=" current location of user",
     )
     def get(self, request):
         try:
@@ -90,7 +88,9 @@ class CurrentLocation(APIView):
                 )
             return Response(data, status=status.HTTP_200_OK)
         except:
-            return Response({"error":"Something Went Wrong.."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Something Went Wrong.."}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class EmailAuthView(APIView):
@@ -98,11 +98,8 @@ class EmailAuthView(APIView):
         tags=["Authentication"],
         operation_description="For Email Authentication And Email Updation after Authentication",
         request_body=UserEmailSerializer,
-        responses={
-            200:UserEmailSerializer,
-            400:"bad request",
-            500:"errors"
-        })
+        responses={200: UserEmailSerializer, 400: "bad request", 500: "errors"},
+    )
     def post(self, request):
         email = request.data.get("email")
         serializer = EmailSerilaizer(data=request.data)
@@ -113,37 +110,30 @@ class EmailAuthView(APIView):
         email_from = settings.EMAIL_HOST_USER
         recipient_list = (email,)
         email_thread = Thread(
-            target=send_email, args=(subject, message,email_from, recipient_list)  
+            target=send_email, args=(subject, message, email_from, recipient_list)
         )
-        email_thread.start()   
+        email_thread.start()
         response_data = {"email": email, "otp": otp}
-        cache.set(f"{CACHE_PREFIX_EMAIL_AUTHENTICATION}_{email}",response_data,30)
-        return Response({"msg":"chaeck your email...."}, status=status.HTTP_200_OK)
-
+        cache.set(f"{CACHE_PREFIX_EMAIL_AUTHENTICATION}_{email}", response_data, 30)
+        return Response({"msg": "chaeck your email...."}, status=status.HTTP_200_OK)
 
 
 @permission_classes([IsAuthenticated])
 class EmailUpdateView(APIView):
     @swagger_auto_schema(
-       tags=["ProfileUpdation"],
+        tags=["ProfileUpdation"],
         operation_description="Email Updation By User",
-        responses={
-            200:UserEmailSerializer,
-            400:"bad request",
-            500:"errors"
-        })
+        responses={200: UserEmailSerializer, 400: "bad request", 500: "errors"},
+    )
     def get(self, request):
         return Response({"email": request.user.email}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-       tags=["ProfileUpdation"],  
+        tags=["ProfileUpdation"],
         operation_description="For Email Authentication And Email Updation after Authentication",
         request_body=UserEmailSerializer,
-        responses={
-            200:UserEmailSerializer,
-            400:"bad request",
-            500:"errors"
-        })
+        responses={200: UserEmailSerializer, 400: "bad request", 500: "errors"},
+    )
     def post(self, request):
         email = request.data.get("email")
         if email == request.user.email:
@@ -160,10 +150,8 @@ class EmailUpdateView(APIView):
         )
         email_thread.start()
         response_data = {"email": email, "otp": otp}
-        cache.set(f"{CACHE_PREFIX_EMAIL_UPDATION}_{email}",response_data,30)
+        cache.set(f"{CACHE_PREFIX_EMAIL_UPDATION}_{email}", response_data, 30)
         return Response(response_data, status=status.HTTP_200_OK)
-
-
 
 
 class EmailAuthVerification(APIView):
@@ -171,34 +159,35 @@ class EmailAuthVerification(APIView):
         tags=["Authentication"],
         operation_description="Otp Verification For Authentication And Mobile Updation",
         request_body=OtpSerilizers,
-        responses={
-            200:OtpSerilizers,
-            400:"bad request",
-            500:'errors'
-        })
+        responses={200: OtpSerilizers, 400: "bad request", 500: "errors"},
+    )
     def post(self, request):
-        email_enterd = request.data.get('email')
-        cached_auth_data = cache.get(f"{CACHE_PREFIX_EMAIL_AUTHENTICATION}_{email_enterd}")
+        email_enterd = request.data.get("email")
+        cached_auth_data = cache.get(
+            f"{CACHE_PREFIX_EMAIL_AUTHENTICATION}_{email_enterd}"
+        )
         if cached_auth_data is not None:
-            otp = cached_auth_data.get('otp')
-            email = cached_auth_data.get('email')
+            otp = cached_auth_data.get("otp")
+            email = cached_auth_data.get("email")
             otp_entered = request.data.get("otp_entered")
             serializer = OtpSerilizers(data=request.data)
             if serializer.is_valid():
                 if int(otp) == int(otp_entered):
-                    user,_ = MyUser.objects.get_or_create(email=email)
+                    user, _ = MyUser.objects.get_or_create(email=email)
                     theatre = None
                     try:
                         theatre = TheareOwnerDetails.objects.get(user_id=user.id)
                     except TheareOwnerDetails.DoesNotExist:
-                        pass 
-                    token = get_tokens_for_user(user,theatre)
+                        pass
+                    token = get_tokens_for_user(user, theatre)
                     return Response({"token": token}, status=status.HTTP_200_OK)
-                return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"msg":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
-        
-
+        return Response(
+            {"msg": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @permission_classes([IsAuthenticated])
@@ -207,13 +196,10 @@ class EmailUpdateVerification(APIView):
         tags=["ProfileUpdation"],
         operation_description="Otp Verification For Authentication And Mobile Updation",
         request_body=OtpSerilizers,
-        responses={
-            200:OtpSerilizers,
-            400:"bad request",
-            500:'errors'
-        })
+        responses={200: OtpSerilizers, 400: "bad request", 500: "errors"},
+    )
     def post(self, request):
-        email_enterd = request.data.get('email')
+        email_enterd = request.data.get("email")
         cached_update_data = cache.get(f"{CACHE_PREFIX_EMAIL_UPDATION}_{email_enterd}")
         if cached_update_data is not None:
             otp = cached_update_data.get("otp")
@@ -225,45 +211,44 @@ class EmailUpdateVerification(APIView):
                     user = request.user
                     user.email = email
                     user.save()
-                    return Response({"msg": "Email Updated Succesfully"},status=status.HTTP_200_OK)
-                return Response({"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {"msg": "Email Updated Succesfully"}, status=status.HTTP_200_OK
+                    )
+                return Response(
+                    {"msg": "Invalid Otp..."}, status=status.HTTP_400_BAD_REQUEST
+                )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"msg":"something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"msg": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @permission_classes([IsAuthenticated])
 class UserProfileView(APIView):
     @swagger_auto_schema(
         operation_description="View for profile updation",
-        tags=['ProfileUpdation'],
-        responses={
-            200:UserProfileListSerializer,
-            400:"bad request",
-            500:"errors"
-        })
+        tags=["ProfileUpdation"],
+        responses={200: UserProfileListSerializer, 400: "bad request", 500: "errors"},
+    )
     def get(self, request):
         user = UserProfile.objects.filter(user_id=request.user.id).select_related(
             "user"
         )[0]
         serializer = UserProfileListSerializer(user)
-        
+
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    
-    
-    
+
     @swagger_auto_schema(
         operation_description="Update the profile section , Email and Phone Cant update from here",
-        tags=['ProfileUpdation'],
+        tags=["ProfileUpdation"],
         request_body=UserProfileListSerializer,
-        responses={
-            200:UserProfileListSerializer,
-            400:"bad request",
-            500:"errors"
-        })
+        responses={200: UserProfileListSerializer, 400: "bad request", 500: "errors"},
+    )
     def put(self, request):
         queryset = UserProfile.objects.get(user_id=request.user.id)
-        serializer = UserProfileListSerializer(queryset, data=request.data, partial=True)
+        serializer = UserProfileListSerializer(
+            queryset, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -280,29 +265,21 @@ class UserProfileView(APIView):
 class MobilePhoneUpdate(APIView):
     @swagger_auto_schema(
         operation_description="Phone Updation View",
-        tags=['ProfileUpdation'],
-        responses={
-            200:UserProfilePhoneSerializer,
-            400:"bad request",
-            500:"errors"
-        })
+        tags=["ProfileUpdation"],
+        responses={200: UserProfilePhoneSerializer, 400: "bad request", 500: "errors"},
+    )
     def get(self, request):
         if request.user.userprofile.phone:
-            return Response({"phone": request.user.userprofile.phone[3:]}, status=status.HTTP_200_OK)
-        return Response({"msg":"Update your phone"}, status=status.HTTP_200_OK)
-        
-        
-           
-        
+            return Response(
+                {"phone": request.user.userprofile.phone[3:]}, status=status.HTTP_200_OK
+            )
+        return Response({"msg": "Update your phone"}, status=status.HTTP_200_OK)
+
     @swagger_auto_schema(
         operation_description="Update Phone here",
-        tags=['ProfileUpdation'],
+        tags=["ProfileUpdation"],
         request_body=UserProfilePhoneSerializer,
-        responses={
-            200:UserProfilePhoneSerializer,
-            400:"bad request",
-            500:"errors"
-        }
+        responses={200: UserProfilePhoneSerializer, 400: "bad request", 500: "errors"},
     )
     def post(self, request):
         serializer = UserProfilePhoneSerializer(data=request.data)
@@ -311,8 +288,15 @@ class MobilePhoneUpdate(APIView):
 
             verification_sid = send_sms(phone)
             if verification_sid is not None:
-                cache.set(f"{CACHE_PREFIX_MOBILE_UPDATION}_{phone}",verification_sid,30)
-                return Response({"msg": "we send a otp verification number to the phone number.c0nfirm that"}, status=status.HTTP_200_OK)
+                cache.set(
+                    f"{CACHE_PREFIX_MOBILE_UPDATION}_{phone}", verification_sid, 30
+                )
+                return Response(
+                    {
+                        "msg": "we send a otp verification number to the phone number.c0nfirm that"
+                    },
+                    status=status.HTTP_200_OK,
+                )
             return Response(
                 {"msg": "Cant send otp!!!"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -322,21 +306,16 @@ class MobilePhoneUpdate(APIView):
 # OTPVerification
 @permission_classes([IsAuthenticated])
 class OtpVerification(APIView):
-         
     @swagger_auto_schema(
         operation_description="Enter otp in the phone here, Only input the the verification_sid and the otp",
-        tags=['ProfileUpdation'],
+        tags=["ProfileUpdation"],
         request_body=OtpSerilizers,
-        responses={
-            200:OtpSerilizers,
-            400:"bad request",
-            500:"errors"
-        }
+        responses={200: OtpSerilizers, 400: "bad request", 500: "errors"},
     )
     def post(self, request):
-        phone = request.data.get('phone')
+        phone = request.data.get("phone")
         verification_sid = cache.get(f"{CACHE_PREFIX_MOBILE_UPDATION}_{phone}")
-        if verification_sid is not None:     
+        if verification_sid is not None:
             otp_enterd = request.data.get("otp_enterd")
             print(otp_enterd)
             serializer = OtpSerilizers(data=request.data)
