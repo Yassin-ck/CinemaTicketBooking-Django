@@ -196,7 +196,7 @@ class TheatreLoginRequest(APIView):
                 recipient_list = (email,)
                 send_email(subject, message, email_from, recipient_list)
                 response_data = {"email": email, "otp": otp}
-                cache.set(f"{CACHE_PREFIX_THEATRE_AUTH}_{email}", response_data, None)
+                cache.set(f"{CACHE_PREFIX_THEATRE_AUTH}_{email}", response_data, 60)
                 return Response(response_data, status=status.HTTP_200_OK)
             except:
                 return Response(
@@ -265,7 +265,7 @@ class TheatreLoginVerify(APIView):
                     {"msg": "invalid otp.."}, status=status.HTTP_400_BAD_REQUEST
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"error": ".."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "..."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @permission_classes([IsAuthenticatedOrReadOnly])
