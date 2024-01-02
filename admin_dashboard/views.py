@@ -65,17 +65,16 @@ class UserProfileViewBYAdmin(APIView):
         responses={200: UserProfileListSerializer, 400: "errors"},
     )
     def get(self, request):
-        queryset = UserProfile.objects.select_related("user").order_by("user__username")
-        number_of_users = len(queryset)
+        instance = UserProfile.objects.select_related("user").order_by("user__username")
         paginator = UserProfilePagination()
-        number_of_page = number_of_users // paginator.page_size
-        result_page = paginator.paginate_queryset(queryset, request)
+        queryset = paginator.paginate_queryset(instance, request)
         serializer = UserProfileListSerializer(
-            result_page, many=True, context={"request": request}
+            queryset, many=True, context={"request": request}
         )
         response_data = {
             "user": serializer.data,
-            "page_number": number_of_page,
+            "page_number":paginator.page.paginator.num_pages
+            
         }
         return Response(response_data, status=status.HTTP_200_OK)
 
