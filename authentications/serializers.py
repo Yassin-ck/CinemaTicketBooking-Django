@@ -1,3 +1,4 @@
+from pyexpat import model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .modules import google
@@ -55,6 +56,7 @@ class GoogleSocialAuthSerializer(serializers.Serializer):
 class UserDetailsChoiceSerilaizer(serializers.Serializer):
     email = serializers.EmailField(required=False)
     username = serializers.CharField(required=False)
+    is_active = serializers.BooleanField()
 
 
 class UserProfileListSerializer(serializers.ModelSerializer):

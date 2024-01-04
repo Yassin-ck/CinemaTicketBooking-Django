@@ -135,6 +135,7 @@ class EmailUpdateView(APIView):
         responses={200: UserEmailSerializer, 400: "bad request", 500: "errors"},
     )
     def post(self, request):
+        print(request.data)
         email = request.data.get("email")
         if email == request.user.email:
             return Response({"msg": "No Changes"}, status=status.HTTP_400_BAD_REQUEST)

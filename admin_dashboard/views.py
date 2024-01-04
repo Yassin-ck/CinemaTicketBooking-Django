@@ -64,6 +64,7 @@ class UserProfileViewBYAdmin(APIView):
         operation_description="Users Full View",
         responses={200: UserProfileListSerializer, 400: "errors"},
     )
+    
     def get(self, request):
         instance = UserProfile.objects.select_related("user").order_by("user__username")
         paginator = UserProfilePagination()
