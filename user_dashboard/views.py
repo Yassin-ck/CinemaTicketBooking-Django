@@ -624,6 +624,8 @@ class TicketBookingApi(APIView):
                     show=F("id"),
                     time=F("show_time__id"),
                     date=F("show_dates__id"),
+                    movie=F("movies__movie_name"),
+                    languges=F('language__name')
                 )
                 .first()
             )
@@ -649,6 +651,8 @@ class TicketBookingApi(APIView):
                     "theatre": theatre_name,
                     "screen": screen_number,
                     "booked_date": today,
+                    "movie":payment_data['movie'],
+                    "language":payment_data['languges']
                 }
                 cache.set(
                     f"{CACHE_PREFIX_TICKET_DETAILS}_{data['customer_details']['email']}",
