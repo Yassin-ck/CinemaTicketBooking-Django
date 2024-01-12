@@ -288,7 +288,6 @@ class MovieDetailsAdding(APIView):
         },
     )
     def post(self, request):
-        print(request.data)
         serializer = MovieDetailsCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             MoviesDetails.objects.create(
